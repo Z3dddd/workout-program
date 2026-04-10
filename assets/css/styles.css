@@ -362,14 +362,6 @@ body {
   color: var(--text);
 }
 
-.foundation-note {
-  color: var(--found);
-}
-
-.ramping-note {
-  color: var(--ramp);
-}
-
 @media (min-width: 700px) {
   .week-buttons {
     grid-template-columns: repeat(6, 1fr);
