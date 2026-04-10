@@ -71,6 +71,45 @@ body {
   line-height: 1.4;
 }
 
+.program-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 0 0 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot.foundation {
+  background: var(--found);
+}
+
+.legend-dot.ramping {
+  background: var(--ramp);
+}
+
+.legend-dot.strength {
+  background: var(--accent);
+}
+
+.legend-dot.hypertrophy {
+  background: #9f67ff;
+}
+
 .day-quick-nav {
   margin-bottom: 14px;
 }
@@ -437,6 +476,10 @@ body {
 }
 
 @media (min-width: 700px) {
+  .legend-item {
+    font-size: 14px;
+  }
+
   .day-tabs {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
