@@ -82,7 +82,7 @@ function createDayCard(day, weekNum, dayIdx) {
 
       const label = document.createElement("div");
       label.className = "weight-label";
-      label.textContent = `Set ${setNum}`;
+      label.textContent = `Set ${setNum} (lb)`;
 
       const input = document.createElement("input");
       input.className = "weight-input";

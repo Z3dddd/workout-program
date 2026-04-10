@@ -61,13 +61,13 @@ function average(numbers) {
 
 function formatWeight(num) {
   if (num === null || Number.isNaN(num)) return "--";
-  return `${num.toFixed(1)} kg`;
+  return `${num.toFixed(1)} lb`;
 }
 
 function formatDelta(num) {
   if (num === null || Number.isNaN(num)) return "--";
   const sign = num > 0 ? "+" : "";
-  return `${sign}${num.toFixed(1)} kg`;
+  return `${sign}${num.toFixed(1)} lb`;
 }
 
 function createEmptyText(message) {
@@ -206,7 +206,7 @@ function openDayTrendModal(dayInfo, entries) {
               label(context) {
                 const value = context.parsed.y;
                 if (value === null || Number.isNaN(value)) return `${context.dataset.label}: --`;
-                return `${context.dataset.label}: ${value.toFixed(1)} kg`;
+                return `${context.dataset.label}: ${value.toFixed(1)} lb`;
               }
             }
           }
@@ -220,7 +220,7 @@ function openDayTrendModal(dayInfo, entries) {
             ticks: {
               color: muted,
               callback(value) {
-                return `${value}kg`;
+                return `${value}lb`;
               }
             },
             grid: { color: border }
