@@ -311,6 +311,13 @@ body {
   background: var(--surface);
 }
 
+.day-progress-head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .day-progress-head.strength {
   border-left-color: var(--accent);
 }
@@ -323,6 +330,27 @@ body {
   font-family: "Bebas Neue", sans-serif;
   font-size: 24px;
   line-height: 1;
+}
+
+.day-trend-btn {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  border-top: 2px solid var(--accent);
+  background: #0f1218;
+  color: var(--accent);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.day-trend-btn:hover,
+.day-trend-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .day-progress-type {
@@ -346,9 +374,23 @@ body {
 }
 
 .exercise-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
-  color: var(--text);
   font-weight: 500;
+}
+
+.exercise-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.exercise-name-text {
+  color: var(--text);
 }
 
 .exercise-meta {
@@ -366,6 +408,55 @@ body {
   padding: 10px 2px;
 }
 
+.chart-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.chart-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.chart-dialog-card {
+  width: min(920px, calc(100vw - 16px));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 12px;
+}
+
+.chart-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.chart-dialog-head h3 {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(24px, 7vw, 40px);
+  line-height: 1;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+
+.chart-close-btn {
+  min-height: 36px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 52vh;
+  min-height: 280px;
+}
+
+.chart-empty {
+  margin-top: 10px;
+  padding-left: 2px;
+}
+
 @media (min-width: 700px) {
   .summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -377,5 +468,16 @@ body {
 
   .analysis-shell {
     padding: 20px 20px 80px;
+  }
+}
+
+@media (max-width: 420px) {
+  .chart-dialog-card {
+    padding: 10px;
+  }
+
+  .chart-wrap {
+    height: 46vh;
+    min-height: 240px;
   }
 }

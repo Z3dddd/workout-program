@@ -60,6 +60,20 @@
     </form>
   </dialog>
 
+  <dialog class="chart-dialog" id="dayTrendDialog">
+    <div class="chart-dialog-card">
+      <div class="chart-dialog-head">
+        <h3 id="dayTrendTitle">DAY TREND</h3>
+        <button type="button" class="sync-btn ghost chart-close-btn" id="closeDayTrendBtn">CLOSE</button>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="dayTrendCanvas"></canvas>
+      </div>
+      <p id="dayTrendEmpty" class="empty chart-empty" hidden>No weekly data available for this day yet.</p>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script type="module" src="./assets/js/analysis.js"></script>
 </body>
 </html>
