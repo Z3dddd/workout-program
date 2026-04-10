@@ -41,6 +41,13 @@ body {
   padding-left: 14px;
 }
 
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .hero-label {
   font-family: "DM Mono", monospace;
   font-size: 10px;
@@ -48,6 +55,31 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   margin-bottom: 6px;
+}
+
+.analysis-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 4px;
+  background: #0e1016;
+  color: var(--accent);
+  text-decoration: none;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  font-weight: 500;
+}
+
+.analysis-btn:focus-visible,
+.analysis-btn:hover {
+  outline: none;
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .hero h1 {

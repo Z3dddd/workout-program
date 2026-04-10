@@ -1,0 +1,256 @@
+:root {
+  --bg: #0a0a0b;
+  --surface: #111114;
+  --card: #17171c;
+  --border: #2a2a35;
+  --accent: #e8ff00;
+  --text: #e8e8ef;
+  --muted: #6b6f84;
+  --found: #00c2ff;
+  --ramp: #ff4d00;
+  --hyper: #9f67ff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", sans-serif;
+  min-height: 100vh;
+}
+
+.analysis-shell {
+  width: min(1000px, 100%);
+  margin: 0 auto;
+  padding: calc(16px + env(safe-area-inset-top)) 12px calc(60px + env(safe-area-inset-bottom));
+}
+
+.analysis-hero {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  margin-bottom: 18px;
+}
+
+.analysis-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-label {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  color: var(--muted);
+}
+
+.back-btn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 4px;
+  background: #0e1016;
+  color: var(--accent);
+  text-decoration: none;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+}
+
+.analysis-hero h1 {
+  margin-top: 8px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(34px, 9vw, 60px);
+  line-height: 0.92;
+  letter-spacing: 1px;
+}
+
+.analysis-hero h1 span {
+  color: var(--accent);
+}
+
+.hero-sub {
+  margin-top: 10px;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.section-title {
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.summary-wrap,
+.weekly-wrap,
+.exercise-wrap {
+  margin-top: 16px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.summary-key {
+  display: block;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.summary-value {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.summary-value.positive {
+  color: var(--accent);
+}
+
+.summary-value.negative {
+  color: var(--ramp);
+}
+
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.week-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.week-chip-key {
+  display: block;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.week-chip-value {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 16px;
+  font-family: "DM Mono", monospace;
+}
+
+.day-analysis {
+  display: grid;
+  gap: 10px;
+}
+
+.day-progress-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.day-progress-head {
+  padding: 10px 12px;
+  border-left: 3px solid transparent;
+  background: var(--surface);
+}
+
+.day-progress-head.strength {
+  border-left-color: var(--accent);
+}
+
+.day-progress-head.hyper {
+  border-left-color: var(--hyper);
+}
+
+.day-progress-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.day-progress-type {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  margin-top: 4px;
+}
+
+.day-progress-head.strength .day-progress-type {
+  color: var(--accent);
+}
+
+.day-progress-head.hyper .day-progress-type {
+  color: var(--hyper);
+}
+
+.exercise-row {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.exercise-name {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.exercise-meta {
+  margin-top: 4px;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.empty {
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  padding: 10px 2px;
+}
+
+@media (min-width: 700px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .weekly-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .analysis-shell {
+    padding: 20px 20px 80px;
+  }
+}

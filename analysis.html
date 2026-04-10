@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Workout Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/analysis.css">
+</head>
+<body>
+  <main class="analysis-shell">
+    <header class="analysis-hero">
+      <div class="analysis-hero-top">
+        <div class="hero-label">12-WEEK TRACKING VIEW</div>
+        <a class="back-btn" href="./index.html">BACK TO PLAN</a>
+      </div>
+      <h1>WORKOUT<br><span>ANALYSIS</span></h1>
+      <p class="hero-sub">Average load and progress from your logged sets across Weeks 1-12.</p>
+    </header>
+
+    <section class="summary-wrap">
+      <h2 class="section-title">Overview</h2>
+      <div id="summaryCards" class="summary-grid"></div>
+    </section>
+
+    <section class="weekly-wrap">
+      <h2 class="section-title">Weekly Average Load</h2>
+      <div id="weeklyAverages" class="weekly-grid"></div>
+    </section>
+
+    <section class="exercise-wrap">
+      <h2 class="section-title">Exercise Progress By Day</h2>
+      <div id="dayAnalysis" class="day-analysis"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/analysis.js"></script>
+</body>
+</html>
