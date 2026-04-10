@@ -223,9 +223,78 @@ body {
 }
 
 .summary-wrap,
+.pr-wrap,
 .weekly-wrap,
+.completion-wrap,
 .exercise-wrap {
   margin-top: 16px;
+}
+
+.analysis-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.filter-field {
+  display: grid;
+  gap: 4px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.filter-field select {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  padding: 8px 9px;
+}
+
+.filter-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.filter-toggle {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+  padding: 8px 9px;
+}
+
+.filter-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.filter-count {
+  margin-left: auto;
+  min-width: 48px;
+  text-align: center;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(232, 255, 0, 0.08);
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 0.6px;
 }
 
 .summary-grid {
@@ -265,6 +334,63 @@ body {
   color: var(--ramp);
 }
 
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pr-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.pr-card-wide {
+  grid-column: 1 / -1;
+}
+
+.pr-key {
+  display: block;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.pr-value {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.pr-top-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pr-top-row {
+  display: grid;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.pr-top-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pr-top-meta {
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+}
+
 .weekly-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -290,6 +416,58 @@ body {
   margin-top: 2px;
   color: var(--text);
   font-size: 16px;
+  font-family: "DM Mono", monospace;
+}
+
+.completion-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.completion-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.completion-key {
+  display: block;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.completion-value {
+  display: block;
+  margin-top: 4px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.completion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.completion-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.completion-chip-value {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 14px;
   font-family: "DM Mono", monospace;
 }
 
@@ -393,11 +571,31 @@ body {
   color: var(--text);
 }
 
+.exercise-pr-badge {
+  margin-left: auto;
+  padding: 3px 7px;
+  border: 1px solid #5f6900;
+  border-radius: 999px;
+  background: rgba(232, 255, 0, 0.14);
+  color: var(--accent);
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+}
+
 .exercise-meta {
   margin-top: 4px;
   font-family: "DM Mono", monospace;
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.4;
+}
+
+.exercise-note-line {
+  margin-top: 4px;
+  font-family: "DM Mono", monospace;
+  color: var(--text);
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -462,7 +660,15 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .pr-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .weekly-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .completion-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
@@ -472,6 +678,10 @@ body {
 }
 
 @media (max-width: 420px) {
+  .analysis-filters {
+    grid-template-columns: 1fr;
+  }
+
   .chart-dialog-card {
     padding: 10px;
   }

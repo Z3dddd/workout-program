@@ -1,4 +1,11 @@
-import { getWorkoutData, saveWorkoutData } from "./storage.js";
+import {
+  getExerciseNote,
+  getExerciseRpe,
+  getWorkoutData,
+  saveExerciseNote,
+  saveExerciseRpe,
+  saveWorkoutData
+} from "./storage.js";
 
 let activeWeekNum = 1;
 let weekPhaseMap = {};
@@ -107,7 +114,42 @@ function createDayCard(day, weekNum, dayIdx) {
       weightInputs.appendChild(inputWrap);
     }
 
-    exDiv.append(exName, exMeta, weightInputs);
+    const logWrap = document.createElement("div");
+    logWrap.className = "exercise-log-wrap";
+
+    const rpeWrap = document.createElement("label");
+    rpeWrap.className = "exercise-rpe-wrap";
+    rpeWrap.textContent = "Session RPE";
+
+    const rpeInput = document.createElement("input");
+    rpeInput.className = "exercise-rpe-input";
+    rpeInput.type = "text";
+    rpeInput.inputMode = "decimal";
+    rpeInput.placeholder = "e.g. 8.5";
+    rpeInput.maxLength = 4;
+    rpeInput.value = getExerciseRpe(weekNum, dayIdx, exIdx);
+    rpeInput.addEventListener("change", (event) => {
+      saveExerciseRpe(weekNum, dayIdx, exIdx, event.target.value);
+    });
+    rpeWrap.appendChild(rpeInput);
+
+    const noteWrap = document.createElement("label");
+    noteWrap.className = "exercise-note-wrap";
+    noteWrap.textContent = "Week Note";
+
+    const noteInput = document.createElement("textarea");
+    noteInput.className = "exercise-note-input";
+    noteInput.rows = 2;
+    noteInput.maxLength = 200;
+    noteInput.placeholder = "Optional: felt easy, elbow pain, form cues...";
+    noteInput.value = getExerciseNote(weekNum, dayIdx, exIdx);
+    noteInput.addEventListener("change", (event) => {
+      saveExerciseNote(weekNum, dayIdx, exIdx, event.target.value);
+    });
+    noteWrap.appendChild(noteInput);
+
+    logWrap.append(rpeWrap, noteWrap);
+    exDiv.append(exName, exMeta, weightInputs, logWrap);
     dayContent.appendChild(exDiv);
   });
 

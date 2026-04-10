@@ -1,4 +1,6 @@
 const buildStorageKey = (week, day, exercise, setNum) => `w${week}_d${day}_e${exercise}_s${setNum}`;
+const buildExerciseNoteKey = (week, day, exercise) => `note_w${week}_d${day}_e${exercise}`;
+const buildExerciseRpeKey = (week, day, exercise) => `rpe_w${week}_d${day}_e${exercise}`;
 
 function saveWorkoutData(week, day, exercise, setNum, value) {
   const key = buildStorageKey(week, day, exercise, setNum);
@@ -14,6 +16,36 @@ function saveWorkoutData(week, day, exercise, setNum, value) {
 
 function getWorkoutData(week, day, exercise, setNum) {
   const key = buildStorageKey(week, day, exercise, setNum);
+  return localStorage.getItem(key) || "";
+}
+
+function saveExerciseNote(week, day, exercise, value) {
+  const key = buildExerciseNoteKey(week, day, exercise);
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, trimmed);
+  }
+}
+
+function getExerciseNote(week, day, exercise) {
+  const key = buildExerciseNoteKey(week, day, exercise);
+  return localStorage.getItem(key) || "";
+}
+
+function saveExerciseRpe(week, day, exercise, value) {
+  const key = buildExerciseRpeKey(week, day, exercise);
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, trimmed);
+  }
+}
+
+function getExerciseRpe(week, day, exercise) {
+  const key = buildExerciseRpeKey(week, day, exercise);
   return localStorage.getItem(key) || "";
 }
 
@@ -53,4 +85,13 @@ function applyRemoteEntries(entries) {
   });
 }
 
-export { applyRemoteEntries, getAllWorkoutEntries, getWorkoutData, saveWorkoutData };
+export {
+  applyRemoteEntries,
+  getAllWorkoutEntries,
+  getExerciseNote,
+  getExerciseRpe,
+  getWorkoutData,
+  saveExerciseNote,
+  saveExerciseRpe,
+  saveWorkoutData
+};

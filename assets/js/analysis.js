@@ -1,5 +1,5 @@
 import { weekData } from "./data/weekData.js";
-import { applyRemoteEntries } from "./storage.js";
+import { applyRemoteEntries, getExerciseNote, getExerciseRpe } from "./storage.js";
 import {
   clearSavedPin,
   flushPending,
@@ -14,7 +14,9 @@ import {
 } from "./sync.js";
 
 const WEEK_LABELS = Array.from({ length: 12 }, (_, i) => `WK ${i + 1}`);
+const FILTER_DEFAULTS = { dayType: "all", phase: "all", notesOnly: false };
 let activeTrendChart = null;
+let activeFilters = { ...FILTER_DEFAULTS };
 const EXERCISE_COLOR_PALETTE = [
   "#00C2FF",
   "#FF4D00",
@@ -48,6 +50,14 @@ function parseWeight(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function parseRpe(value) {
+  const normalized = String(value).replace(",", ".").trim();
+  const numeric = Number.parseFloat(normalized);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric < 1 || numeric > 10) return null;
+  return numeric;
+}
+
 function getStorageValue(week, day, exercise, setNum) {
   const key = `w${week}_d${day}_e${exercise}_s${setNum}`;
   return localStorage.getItem(key);
@@ -68,6 +78,127 @@ function formatDelta(num) {
   if (num === null || Number.isNaN(num)) return "--";
   const sign = num > 0 ? "+" : "";
   return `${sign}${num.toFixed(1)} lb`;
+}
+
+function formatPercent(num) {
+  if (num === null || Number.isNaN(num)) return "--";
+  return `${num.toFixed(0)}%`;
+}
+
+function matchesDayFilter(dayType, selectedFilter) {
+  if (selectedFilter === "all") return true;
+  const normalized = dayType === "hyper" ? "hypertrophy" : dayType;
+  return normalized === selectedFilter;
+}
+
+function matchesPhaseFilter(phase, selectedFilter) {
+  if (selectedFilter === "all") return true;
+  return phase === selectedFilter;
+}
+
+function hasNotesOrRpe(entry) {
+  const hasRpe = entry.weeklyRpe.some((value) => value !== null);
+  const hasNote = entry.weeklyNotes.some((value) => value.trim() !== "");
+  return hasRpe || hasNote;
+}
+
+function getLatestNonEmpty(values, isValid) {
+  for (let idx = values.length - 1; idx >= 0; idx -= 1) {
+    const value = values[idx];
+    if (isValid(value)) {
+      return { value, week: idx + 1 };
+    }
+  }
+  return null;
+}
+
+function getWeekMax(values) {
+  if (!values.length) return null;
+  return values.reduce((max, value) => (value > max ? value : max), values[0]);
+}
+
+function getExerciseDisplayName(entry) {
+  const names = [...entry.names];
+  return names.length === 1 ? names[0] : names.join(" / ");
+}
+
+function computePrSummary(exercises) {
+  let totalPrHits = 0;
+  let slotsWithPr = 0;
+  let latestPrWeek = null;
+  const topImprovers = [];
+
+  exercises.forEach((entry) => {
+    const weeklyMaxes = entry.weeklyValues.map((weekSets) => getWeekMax(weekSets));
+    let runningBest = null;
+    let firstLogged = null;
+    let best = null;
+    let bestWeek = null;
+    const prEvents = [];
+
+    weeklyMaxes.forEach((weekMax, idx) => {
+      if (weekMax === null) return;
+
+      if (firstLogged === null) {
+        firstLogged = weekMax;
+      }
+      if (best === null || weekMax > best) {
+        best = weekMax;
+        bestWeek = idx + 1;
+      }
+      if (runningBest === null) {
+        runningBest = weekMax;
+        return;
+      }
+      if (weekMax > runningBest) {
+        prEvents.push({
+          week: idx + 1,
+          value: weekMax,
+          delta: weekMax - runningBest
+        });
+        runningBest = weekMax;
+      }
+    });
+
+    if (!prEvents.length) {
+      entry.pr = null;
+      return;
+    }
+
+    const latestEvent = prEvents[prEvents.length - 1];
+    const previousEvent = prEvents.length > 1 ? prEvents[prEvents.length - 2] : null;
+    const gain = firstLogged === null || best === null ? null : best - firstLogged;
+
+    entry.pr = {
+      count: prEvents.length,
+      best,
+      bestWeek,
+      lastPrWeek: latestEvent.week,
+      previousBest: previousEvent ? previousEvent.value : null
+    };
+
+    totalPrHits += prEvents.length;
+    slotsWithPr += 1;
+    latestPrWeek = latestPrWeek === null ? latestEvent.week : Math.max(latestPrWeek, latestEvent.week);
+
+    if (gain !== null) {
+      topImprovers.push({
+        label: getExerciseDisplayName(entry),
+        gain,
+        best,
+        bestWeek
+      });
+    }
+  });
+
+  topImprovers.sort((a, b) => b.gain - a.gain);
+
+  return {
+    totalPrHits,
+    slotsWithPr,
+    latestPrWeek,
+    topImprovers: topImprovers.slice(0, 3)
+  };
 }
 
 function createEmptyText(message) {
@@ -246,16 +377,23 @@ function wireDayTrendDialog() {
   });
 }
 
-function collectAnalysisData() {
+function collectAnalysisData(filters = activeFilters) {
   const exerciseMap = new Map();
   const weeklyBuckets = Array.from({ length: 12 }, () => []);
+  const weeklyPlannedSets = Array.from({ length: 12 }, () => 0);
+  const weeklyLoggedSets = Array.from({ length: 12 }, () => 0);
   const allValues = [];
 
   for (let week = 1; week <= 12; week += 1) {
     const weekInfo = weekData[week];
+    if (!matchesPhaseFilter(weekInfo.phase, filters.phase)) continue;
+
     weekInfo.days.forEach((day, dayIdx) => {
+      if (!matchesDayFilter(day.type, filters.dayType)) return;
+
       day.exercises.forEach((exercise, exIdx) => {
         const setCount = getSetCount(exercise.sets);
+        weeklyPlannedSets[week - 1] += setCount;
         const key = `d${dayIdx}_e${exIdx}`;
         if (!exerciseMap.has(key)) {
           exerciseMap.set(key, {
@@ -265,12 +403,16 @@ function collectAnalysisData() {
             type: day.type,
             names: new Set(),
             weeklyValues: Array.from({ length: 12 }, () => []),
+            weeklyNotes: Array.from({ length: 12 }, () => ""),
+            weeklyRpe: Array.from({ length: 12 }, () => null),
             values: []
           });
         }
 
         const entry = exerciseMap.get(key);
         entry.names.add(exercise.name);
+        entry.weeklyNotes[week - 1] = getExerciseNote(week, dayIdx, exIdx);
+        entry.weeklyRpe[week - 1] = parseRpe(getExerciseRpe(week, dayIdx, exIdx));
 
         for (let setNum = 1; setNum <= setCount; setNum += 1) {
           const raw = getStorageValue(week, dayIdx, exIdx, setNum);
@@ -281,19 +423,35 @@ function collectAnalysisData() {
           entry.values.push(value);
           entry.weeklyValues[week - 1].push(value);
           weeklyBuckets[week - 1].push(value);
+          weeklyLoggedSets[week - 1] += 1;
           allValues.push(value);
         }
       });
     });
   }
 
+  const exercises = [...exerciseMap.values()].sort((a, b) => {
+    if (a.dayIdx !== b.dayIdx) return a.dayIdx - b.dayIdx;
+    return a.key.localeCompare(b.key);
+  });
+
+  const filteredExercises = filters.notesOnly ? exercises.filter((entry) => hasNotesOrRpe(entry)) : exercises;
+  const notesEligibleCount = exercises.filter((entry) => hasNotesOrRpe(entry)).length;
+
   return {
-    exercises: [...exerciseMap.values()].sort((a, b) => {
-      if (a.dayIdx !== b.dayIdx) return a.dayIdx - b.dayIdx;
-      return a.key.localeCompare(b.key);
-    }),
+    exercises: filteredExercises,
+    notesEligibleCount,
     weeklyAverages: weeklyBuckets.map((bucket) => average(bucket)),
-    allValues
+    weeklyCompletion: weeklyPlannedSets.map((planned, idx) => {
+      if (!planned) return null;
+      return (weeklyLoggedSets[idx] / planned) * 100;
+    }),
+    completionSummary: {
+      totalLogged: weeklyLoggedSets.reduce((sum, value) => sum + value, 0),
+      totalPlanned: weeklyPlannedSets.reduce((sum, value) => sum + value, 0)
+    },
+    allValues,
+    prSummary: computePrSummary(filteredExercises)
   };
 }
 
@@ -334,6 +492,75 @@ function renderSummary(analysisData) {
   });
 }
 
+function renderPrSummary(analysisData) {
+  const prEl = document.getElementById("prSummary");
+  if (!prEl) return;
+  prEl.innerHTML = "";
+
+  const { prSummary } = analysisData;
+  if (!prSummary || prSummary.slotsWithPr === 0) {
+    prEl.appendChild(createEmptyText("No PRs yet. Log more sets to unlock strict slot-based PR tracking."));
+    return;
+  }
+
+  const cards = [
+    { label: "Total PR Hits", value: String(prSummary.totalPrHits) },
+    { label: "Slots With PR", value: String(prSummary.slotsWithPr) },
+    { label: "Latest PR Week", value: prSummary.latestPrWeek ? `WK ${prSummary.latestPrWeek}` : "--" }
+  ];
+
+  cards.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "pr-card";
+
+    const key = document.createElement("span");
+    key.className = "pr-key";
+    key.textContent = item.label;
+
+    const value = document.createElement("span");
+    value.className = "pr-value";
+    value.textContent = item.value;
+
+    card.append(key, value);
+    prEl.appendChild(card);
+  });
+
+  const topCard = document.createElement("article");
+  topCard.className = "pr-card pr-card-wide";
+
+  const topKey = document.createElement("span");
+  topKey.className = "pr-key";
+  topKey.textContent = "Top Improvements";
+  topCard.appendChild(topKey);
+
+  if (!prSummary.topImprovers.length) {
+    topCard.appendChild(createEmptyText("Not enough data yet to rank improvements."));
+  } else {
+    const list = document.createElement("div");
+    list.className = "pr-top-list";
+
+    prSummary.topImprovers.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "pr-top-row";
+
+      const name = document.createElement("span");
+      name.className = "pr-top-name";
+      name.textContent = item.label;
+
+      const meta = document.createElement("span");
+      meta.className = "pr-top-meta";
+      meta.textContent = `${formatDelta(item.gain)} | Best ${formatWeight(item.best)} | WK ${item.bestWeek}`;
+
+      row.append(name, meta);
+      list.appendChild(row);
+    });
+
+    topCard.appendChild(list);
+  }
+
+  prEl.appendChild(topCard);
+}
+
 function renderWeeklyAverages(analysisData) {
   const weeklyEl = document.getElementById("weeklyAverages");
   if (!weeklyEl) return;
@@ -362,6 +589,68 @@ function renderWeeklyAverages(analysisData) {
   });
 }
 
+function renderCompletion(analysisData) {
+  const summaryEl = document.getElementById("completionSummary");
+  const weeklyEl = document.getElementById("completionWeekly");
+  if (!summaryEl || !weeklyEl) return;
+
+  summaryEl.innerHTML = "";
+  weeklyEl.innerHTML = "";
+
+  const completionValues = analysisData.weeklyCompletion.filter((value) => value !== null);
+  if (!completionValues.length) {
+    weeklyEl.appendChild(createEmptyText("No completion data in this filter scope yet."));
+    return;
+  }
+
+  const overall = analysisData.completionSummary.totalPlanned
+    ? (analysisData.completionSummary.totalLogged / analysisData.completionSummary.totalPlanned) * 100
+    : null;
+
+  const bestValue = completionValues.reduce((max, value) => (value > max ? value : max), completionValues[0]);
+  const bestWeek = analysisData.weeklyCompletion.findIndex((value) => value === bestValue) + 1;
+
+  const summaryItems = [
+    { label: "Overall", value: formatPercent(overall) },
+    { label: "Logged Sets", value: `${analysisData.completionSummary.totalLogged}` },
+    { label: "Best Week", value: `WK ${bestWeek}` }
+  ];
+
+  summaryItems.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "completion-card";
+
+    const key = document.createElement("span");
+    key.className = "completion-key";
+    key.textContent = item.label;
+
+    const value = document.createElement("span");
+    value.className = "completion-value";
+    value.textContent = item.value;
+
+    card.append(key, value);
+    summaryEl.appendChild(card);
+  });
+
+  analysisData.weeklyCompletion.forEach((value, idx) => {
+    if (value === null) return;
+
+    const chip = document.createElement("article");
+    chip.className = "completion-chip";
+
+    const key = document.createElement("span");
+    key.className = "week-chip-key";
+    key.textContent = `WK ${idx + 1}`;
+
+    const chipValue = document.createElement("span");
+    chipValue.className = "completion-chip-value";
+    chipValue.textContent = formatPercent(value);
+
+    chip.append(key, chipValue);
+    weeklyEl.appendChild(chip);
+  });
+}
+
 function renderExerciseProgress(analysisData) {
   const dayEl = document.getElementById("dayAnalysis");
   if (!dayEl) return;
@@ -374,6 +663,11 @@ function renderExerciseProgress(analysisData) {
     }
     dayGroups.get(exercise.dayIdx).push(exercise);
   });
+
+  if (!dayGroups.size) {
+    dayEl.appendChild(createEmptyText("No exercise rows match the current filters. Try disabling Notes Only or broadening split/phase filters."));
+    return;
+  }
 
   dayGroups.forEach((entries, dayIdx) => {
     const colorMap = createDayColorMap(entries);
@@ -425,6 +719,13 @@ function renderExerciseProgress(analysisData) {
       nameText.style.color = color;
       name.append(legendDot, nameText);
 
+      if (entry.pr) {
+        const badge = document.createElement("span");
+        badge.className = "exercise-pr-badge";
+        badge.textContent = entry.pr.lastPrWeek === 12 ? "NEW PR" : `PR x${entry.pr.count}`;
+        name.appendChild(badge);
+      }
+
       const overallAvg = average(entry.values);
       const week1Avg = average(entry.weeklyValues[0]);
       const week12Avg = average(entry.weeklyValues[11]);
@@ -436,9 +737,28 @@ function renderExerciseProgress(analysisData) {
 
       const meta = document.createElement("div");
       meta.className = "exercise-meta";
-      meta.textContent = `Avg ${formatWeight(overallAvg)} | W1 ${formatWeight(week1Avg)} | W12 ${formatWeight(week12Avg)} | Delta ${formatDelta(delta)}`;
+      const baseMeta = `Avg ${formatWeight(overallAvg)} | W1 ${formatWeight(week1Avg)} | W12 ${formatWeight(week12Avg)} | Delta ${formatDelta(delta)}`;
+      if (entry.pr) {
+        const prMeta = ` | Best ${formatWeight(entry.pr.best)} (WK ${entry.pr.bestWeek})`;
+        meta.textContent = `${baseMeta}${prMeta}`;
+      } else {
+        meta.textContent = baseMeta;
+      }
 
       row.append(name, meta);
+
+      const latestRpe = getLatestNonEmpty(entry.weeklyRpe, (value) => value !== null);
+      const latestNote = getLatestNonEmpty(entry.weeklyNotes, (value) => value.trim() !== "");
+      if (latestRpe || latestNote) {
+        const noteLine = document.createElement("div");
+        noteLine.className = "exercise-note-line";
+        const parts = [];
+        if (latestRpe) parts.push(`RPE ${latestRpe.value.toFixed(1)} (WK ${latestRpe.week})`);
+        if (latestNote) parts.push(`Note: ${latestNote.value} (WK ${latestNote.week})`);
+        noteLine.textContent = parts.join(" | ");
+        row.appendChild(noteLine);
+      }
+
       card.appendChild(row);
     });
 
@@ -498,10 +818,59 @@ function wirePinDialog(onSynced) {
   });
 }
 
+function wireFilterControls() {
+  const dayTypeSelect = document.getElementById("dayTypeFilter");
+  const phaseSelect = document.getElementById("phaseFilter");
+  const notesOnlyInput = document.getElementById("notesOnlyFilter");
+  if (!dayTypeSelect || !phaseSelect || !notesOnlyInput) return;
+
+  dayTypeSelect.value = activeFilters.dayType;
+  phaseSelect.value = activeFilters.phase;
+  notesOnlyInput.checked = activeFilters.notesOnly;
+
+  dayTypeSelect.addEventListener("change", () => {
+    activeFilters = {
+      ...activeFilters,
+      dayType: dayTypeSelect.value
+    };
+    renderAll();
+  });
+
+  phaseSelect.addEventListener("change", () => {
+    activeFilters = {
+      ...activeFilters,
+      phase: phaseSelect.value
+    };
+    renderAll();
+  });
+
+  notesOnlyInput.addEventListener("change", () => {
+    activeFilters = {
+      ...activeFilters,
+      notesOnly: notesOnlyInput.checked
+    };
+    renderAll();
+  });
+}
+
+function renderNotesOnlyCount(analysisData) {
+  const countEl = document.getElementById("notesOnlyCount");
+  if (!countEl) return;
+
+  if (activeFilters.notesOnly) {
+    countEl.textContent = `${analysisData.exercises.length}`;
+  } else {
+    countEl.textContent = `${analysisData.notesEligibleCount}`;
+  }
+}
+
 function renderAll() {
   const analysisData = collectAnalysisData();
+  renderNotesOnlyCount(analysisData);
   renderSummary(analysisData);
+  renderPrSummary(analysisData);
   renderWeeklyAverages(analysisData);
+  renderCompletion(analysisData);
   renderExerciseProgress(analysisData);
 }
 
@@ -509,6 +878,7 @@ async function init() {
   setSyncStatusHandler(updateStatusUi);
   wirePinDialog(renderAll);
   wireDayTrendDialog();
+  wireFilterControls();
   initAutoRetry(() => getSavedPin());
 
   if (!isSyncEnabled()) {

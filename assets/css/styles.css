@@ -627,6 +627,52 @@ body {
   opacity: 0.4;
 }
 
+.exercise-log-wrap {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.exercise-rpe-wrap,
+.exercise-note-wrap {
+  display: grid;
+  gap: 4px;
+  font-size: 10px;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.exercise-rpe-input,
+.exercise-note-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  padding: 8px 9px;
+}
+
+.exercise-rpe-input {
+  min-height: 44px;
+}
+
+.exercise-note-input {
+  min-height: 52px;
+  resize: vertical;
+}
+
+.exercise-rpe-input:focus,
+.exercise-note-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--card);
+}
+
 .notes {
   margin-top: 24px;
   padding: 16px 14px;
@@ -695,5 +741,9 @@ body {
 @media (max-width: 380px) {
   .app-shell {
     padding: calc(12px + env(safe-area-inset-top)) 10px calc(50px + env(safe-area-inset-bottom));
+  }
+
+  .exercise-log-wrap {
+    grid-template-columns: 1fr;
   }
 }

@@ -25,14 +25,52 @@
       <button type="button" class="sync-btn" id="openSyncPinBtn">SET SYNC PIN</button>
     </div>
 
+    <section class="analysis-filter-wrap">
+      <h2 class="section-title">Filters</h2>
+      <div class="analysis-filters">
+        <label class="filter-field" for="dayTypeFilter">
+          <span>Split</span>
+          <select id="dayTypeFilter">
+            <option value="all">All</option>
+            <option value="strength">Strength</option>
+            <option value="hypertrophy">Hypertrophy</option>
+          </select>
+        </label>
+        <label class="filter-field" for="phaseFilter">
+          <span>Phase</span>
+          <select id="phaseFilter">
+            <option value="all">All</option>
+            <option value="foundation">Foundation</option>
+            <option value="ramping">Ramping</option>
+          </select>
+        </label>
+        <label class="filter-toggle" for="notesOnlyFilter">
+          <input id="notesOnlyFilter" type="checkbox">
+          <span>Notes Only</span>
+          <span id="notesOnlyCount" class="filter-count">0</span>
+        </label>
+      </div>
+    </section>
+
     <section class="summary-wrap">
       <h2 class="section-title">Overview</h2>
       <div id="summaryCards" class="summary-grid"></div>
     </section>
 
+    <section class="pr-wrap">
+      <h2 class="section-title">Personal Records</h2>
+      <div id="prSummary" class="pr-grid"></div>
+    </section>
+
     <section class="weekly-wrap">
       <h2 class="section-title">Weekly Average Load</h2>
       <div id="weeklyAverages" class="weekly-grid"></div>
+    </section>
+
+    <section class="completion-wrap">
+      <h2 class="section-title">Weekly Completion</h2>
+      <div id="completionSummary" class="completion-summary"></div>
+      <div id="completionWeekly" class="completion-grid"></div>
     </section>
 
     <section class="exercise-wrap">
