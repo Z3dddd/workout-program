@@ -20,6 +20,11 @@
       <p class="hero-sub">Average load and progress from your logged sets across Weeks 1-12.</p>
     </header>
 
+    <div class="sync-bar">
+      <span class="sync-status" id="syncStatus">LOCAL ONLY</span>
+      <button type="button" class="sync-btn" id="openSyncPinBtn">SET SYNC PIN</button>
+    </div>
+
     <section class="summary-wrap">
       <h2 class="section-title">Overview</h2>
       <div id="summaryCards" class="summary-grid"></div>
@@ -35,6 +40,25 @@
       <div id="dayAnalysis" class="day-analysis"></div>
     </section>
   </main>
+
+  <dialog class="pin-dialog" id="syncPinDialog">
+    <form method="dialog" class="pin-dialog-card" id="syncPinForm">
+      <h3>Enable Cross-Device Sync</h3>
+      <p class="pin-help">Enter your private sync PIN. Use the same PIN on all your devices.</p>
+      <label for="syncPinInput">Sync PIN</label>
+      <input id="syncPinInput" name="syncPin" type="password" inputmode="numeric" minlength="4" autocomplete="off" required>
+      <label class="remember-wrap">
+        <input id="rememberPin" type="checkbox">
+        <span>Remember on this device</span>
+      </label>
+      <div class="pin-actions">
+        <button type="submit" class="sync-btn">SAVE</button>
+        <button type="button" class="sync-btn ghost" id="clearPinBtn">CLEAR PIN</button>
+        <button type="button" class="sync-btn ghost" id="cancelPinBtn">CANCEL</button>
+      </div>
+      <p class="pin-note">If Supabase keys are not configured, sync stays local-only.</p>
+    </form>
+  </dialog>
 
   <script type="module" src="./assets/js/analysis.js"></script>
 </body>

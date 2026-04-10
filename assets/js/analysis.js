@@ -1,4 +1,14 @@
 import { weekData } from "./data/weekData.js";
+import { applyRemoteEntries } from "./storage.js";
+import {
+  clearSavedPin,
+  getSavedPin,
+  isSyncEnabled,
+  pullRemote,
+  savePin,
+  setSyncStatus,
+  setSyncStatusHandler
+} from "./sync.js";
 
 function getSetCount(setText) {
   const match = setText.match(/^\s*(\d+)/);
@@ -96,6 +106,7 @@ function collectAnalysisData() {
 function renderSummary(analysisData) {
   const summaryEl = document.getElementById("summaryCards");
   if (!summaryEl) return;
+  summaryEl.innerHTML = "";
 
   const week1 = analysisData.weeklyAverages[0];
   const week12 = analysisData.weeklyAverages[11];
@@ -132,6 +143,7 @@ function renderSummary(analysisData) {
 function renderWeeklyAverages(analysisData) {
   const weeklyEl = document.getElementById("weeklyAverages");
   if (!weeklyEl) return;
+  weeklyEl.innerHTML = "";
 
   const hasAnyData = analysisData.weeklyAverages.some((weekAvg) => weekAvg !== null);
   if (!hasAnyData) {
@@ -159,6 +171,7 @@ function renderWeeklyAverages(analysisData) {
 function renderExerciseProgress(analysisData) {
   const dayEl = document.getElementById("dayAnalysis");
   if (!dayEl) return;
+  dayEl.innerHTML = "";
 
   const dayGroups = new Map();
   analysisData.exercises.forEach((exercise) => {
@@ -222,7 +235,84 @@ function renderExerciseProgress(analysisData) {
   });
 }
 
-const analysisData = collectAnalysisData();
-renderSummary(analysisData);
-renderWeeklyAverages(analysisData);
-renderExerciseProgress(analysisData);
+function updateStatusUi(payload) {
+  const statusEl = document.getElementById("syncStatus");
+  if (!statusEl) return;
+  statusEl.classList.remove("syncing", "synced", "error");
+  statusEl.classList.add(payload.status);
+  statusEl.textContent = payload.message || payload.status.toUpperCase();
+}
+
+function wirePinDialog(onSynced) {
+  const dialog = document.getElementById("syncPinDialog");
+  const form = document.getElementById("syncPinForm");
+  const openBtn = document.getElementById("openSyncPinBtn");
+  const clearBtn = document.getElementById("clearPinBtn");
+  const cancelBtn = document.getElementById("cancelPinBtn");
+  const pinInput = document.getElementById("syncPinInput");
+  const remember = document.getElementById("rememberPin");
+
+  if (!dialog || !form || !openBtn || !clearBtn || !cancelBtn || !pinInput || !remember) return;
+
+  openBtn.addEventListener("click", () => dialog.showModal());
+  cancelBtn.addEventListener("click", () => dialog.close());
+
+  clearBtn.addEventListener("click", () => {
+    clearSavedPin();
+    setSyncStatus("error", "PIN cleared. Local-only mode.");
+    dialog.close();
+    onSynced();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const pin = pinInput.value.trim();
+    if (!pin) return;
+    savePin(pin, remember.checked);
+    try {
+      const remoteEntries = await pullRemote(pin);
+      applyRemoteEntries(remoteEntries);
+      setSyncStatus("synced", "Sync enabled");
+      dialog.close();
+      onSynced();
+    } catch (error) {
+      setSyncStatus("error", error.message);
+    }
+  });
+}
+
+function renderAll() {
+  const analysisData = collectAnalysisData();
+  renderSummary(analysisData);
+  renderWeeklyAverages(analysisData);
+  renderExerciseProgress(analysisData);
+}
+
+async function init() {
+  setSyncStatusHandler(updateStatusUi);
+  wirePinDialog(renderAll);
+
+  if (!isSyncEnabled()) {
+    setSyncStatus("error", "Local-only (configure Supabase keys)");
+    renderAll();
+    return;
+  }
+
+  const pin = getSavedPin();
+  if (!pin) {
+    setSyncStatus("error", "PIN required for sync");
+    renderAll();
+    return;
+  }
+
+  try {
+    const remoteEntries = await pullRemote(pin);
+    applyRemoteEntries(remoteEntries);
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+
+  renderAll();
+}
+
+init();

@@ -20,6 +20,11 @@
       <div class="hero-sub">12 WEEKS · PUSH/PULL/LEGS x 2 DAILY<br>FOUNDATION (WK 1-5) -> RAMPING (WK 6-12)</div>
     </div>
 
+    <div class="sync-bar" id="syncBar">
+      <span class="sync-status" id="syncStatus">LOCAL ONLY</span>
+      <button type="button" class="sync-btn" id="openSyncPinBtn">SET SYNC PIN</button>
+    </div>
+
     <div class="program-legend" aria-label="Program legend">
       <div class="legend-item">
         <span class="legend-dot foundation" aria-hidden="true"></span>
@@ -71,6 +76,25 @@
       </ul>
     </div>
   </main>
+
+  <dialog class="pin-dialog" id="syncPinDialog">
+    <form method="dialog" class="pin-dialog-card" id="syncPinForm">
+      <h3>Enable Cross-Device Sync</h3>
+      <p class="pin-help">Enter your private sync PIN. Use the same PIN on all your devices.</p>
+      <label for="syncPinInput">Sync PIN</label>
+      <input id="syncPinInput" name="syncPin" type="password" inputmode="numeric" minlength="4" autocomplete="off" required>
+      <label class="remember-wrap">
+        <input id="rememberPin" type="checkbox">
+        <span>Remember on this device</span>
+      </label>
+      <div class="pin-actions">
+        <button type="submit" class="sync-btn">SAVE</button>
+        <button type="button" class="sync-btn ghost" id="clearPinBtn">CLEAR PIN</button>
+        <button type="button" class="sync-btn ghost" id="cancelPinBtn">CANCEL</button>
+      </div>
+      <p class="pin-note">If Supabase keys are not configured, sync stays local-only.</p>
+    </form>
+  </dialog>
 
   <script type="module" src="./assets/js/app.js"></script>
 </body>

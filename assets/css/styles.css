@@ -82,6 +82,127 @@ body {
   color: var(--text);
 }
 
+.sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #0e1016;
+}
+
+.sync-status {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.sync-status.syncing {
+  color: var(--found);
+}
+
+.sync-status.synced {
+  color: var(--accent);
+}
+
+.sync-status.error {
+  color: var(--ramp);
+}
+
+.sync-btn {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  border-top: 2px solid var(--accent);
+  background: #11131a;
+  color: var(--accent);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.sync-btn.ghost {
+  border-top-color: var(--border);
+  color: var(--muted);
+}
+
+.pin-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.pin-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.pin-dialog-card {
+  width: min(430px, calc(100vw - 20px));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.pin-dialog-card h3 {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+.pin-help,
+.pin-note {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.pin-dialog-card label {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.pin-dialog-card input[type="password"] {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 16px;
+  font-family: "DM Mono", monospace;
+}
+
+.remember-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remember-wrap span {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 12px;
+}
+
+.pin-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .hero h1 {
   font-family: "Bebas Neue", sans-serif;
   font-size: clamp(34px, 9vw, 60px);
