@@ -16,6 +16,7 @@ import {
 const WEEK_LABELS = Array.from({ length: 12 }, (_, i) => `WK ${i + 1}`);
 const FILTER_DEFAULTS = { dayType: "all", phase: "all", notesOnly: false };
 let activeTrendChart = null;
+let activeExerciseDetail = null;
 let activeFilters = { ...FILTER_DEFAULTS };
 const EXERCISE_COLOR_PALETTE = [
   "#00C2FF",
@@ -83,6 +84,33 @@ function formatDelta(num) {
 function formatPercent(num) {
   if (num === null || Number.isNaN(num)) return "--";
   return `${num.toFixed(0)}%`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getDeltaChipStyle(delta) {
+  if (delta === null || Number.isNaN(delta)) return "rgba(255,255,255,0.02)";
+  if (delta === 0) return "rgba(255,255,255,0.03)";
+  if (delta > 0) {
+    const alpha = clamp(Math.abs(delta) / 15, 0.1, 0.42);
+    return `rgba(45,255,135,${alpha.toFixed(2)})`;
+  }
+  const alpha = clamp(Math.abs(delta) / 15, 0.1, 0.42);
+  return `rgba(255,77,0,${alpha.toFixed(2)})`;
+}
+
+function extractNoteKeywords(noteText) {
+  const normalized = noteText.toLowerCase();
+  const keywords = [
+    { key: "pain", pattern: /\bpain|ache|hurt|injury|elbow|knee|shoulder\b/ },
+    { key: "fatigue", pattern: /\bfatigue|tired|drained|exhaust|low energy\b/ },
+    { key: "easy", pattern: /\beasy|strong|great|good|smooth\b/ },
+    { key: "sleep", pattern: /\bsleep|slept|insomnia|restless\b/ }
+  ];
+
+  return keywords.filter((entry) => entry.pattern.test(normalized)).map((entry) => entry.key);
 }
 
 function matchesDayFilter(dayType, selectedFilter) {
@@ -377,12 +405,92 @@ function wireDayTrendDialog() {
   });
 }
 
+function closeExerciseDetailDialog() {
+  const dialog = document.getElementById("exerciseDetailDialog");
+  if (!dialog) return;
+  if (dialog.open) dialog.close();
+  activeExerciseDetail = null;
+}
+
+function openExerciseDetailDialog(entry) {
+  const dialog = document.getElementById("exerciseDetailDialog");
+  const titleEl = document.getElementById("exerciseDetailTitle");
+  const metaEl = document.getElementById("exerciseDetailMeta");
+  const trendEl = document.getElementById("exerciseDetailTrend");
+  const logsEl = document.getElementById("exerciseDetailLogs");
+  if (!dialog || !titleEl || !metaEl || !trendEl || !logsEl) return;
+
+  activeExerciseDetail = entry;
+  titleEl.textContent = getExerciseDisplayName(entry).toUpperCase();
+  const latestRpe = getLatestNonEmpty(entry.weeklyRpe, (value) => value !== null);
+  const latestNote = getLatestNonEmpty(entry.weeklyNotes, (value) => value.trim() !== "");
+  metaEl.textContent = `Best ${entry.pr ? formatWeight(entry.pr.best) : "--"} | Last RPE ${latestRpe ? latestRpe.value.toFixed(1) : "--"} | Day ${entry.dayName}`;
+
+  trendEl.innerHTML = "";
+  logsEl.innerHTML = "";
+
+  entry.weeklyValues.forEach((sets, idx) => {
+    const chip = document.createElement("article");
+    chip.className = "heatmap-chip";
+    const key = document.createElement("span");
+    key.className = "week-chip-key";
+    key.textContent = `WK ${idx + 1}`;
+    const value = document.createElement("span");
+    value.className = "heatmap-chip-value";
+    value.textContent = formatWeight(average(sets));
+    chip.append(key, value);
+    trendEl.appendChild(chip);
+  });
+
+  const recentLogs = [];
+  for (let idx = 11; idx >= 0 && recentLogs.length < 4; idx -= 1) {
+    const note = entry.weeklyNotes[idx];
+    const rpe = entry.weeklyRpe[idx];
+    if (note.trim() === "" && rpe === null) continue;
+    recentLogs.push({ week: idx + 1, note, rpe });
+  }
+  if (!recentLogs.length) {
+    logsEl.appendChild(createEmptyText("No note/RPE logs for this exercise yet."));
+  } else {
+    recentLogs.forEach((log) => {
+      const block = document.createElement("div");
+      block.className = "exercise-detail-log";
+      const parts = [`WK ${log.week}`];
+      if (log.rpe !== null) parts.push(`RPE ${log.rpe.toFixed(1)}`);
+      if (log.note.trim()) parts.push(log.note.trim());
+      block.textContent = parts.join(" | ");
+      logsEl.appendChild(block);
+    });
+  }
+
+  dialog.showModal();
+}
+
+function wireExerciseDetailDialog() {
+  const dialog = document.getElementById("exerciseDetailDialog");
+  const closeBtn = document.getElementById("closeExerciseDetailBtn");
+  if (!dialog || !closeBtn) return;
+
+  closeBtn.addEventListener("click", () => closeExerciseDetailDialog());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      closeExerciseDetailDialog();
+    }
+  });
+}
+
 function collectAnalysisData(filters = activeFilters) {
   const exerciseMap = new Map();
   const weeklyBuckets = Array.from({ length: 12 }, () => []);
   const weeklyPlannedSets = Array.from({ length: 12 }, () => 0);
   const weeklyLoggedSets = Array.from({ length: 12 }, () => 0);
   const allValues = [];
+  const volumeByType = {
+    strength: { loggedSets: 0, values: [] },
+    hypertrophy: { loggedSets: 0, values: [] }
+  };
+  const noteKeywordCounts = new Map();
+  const recentFlags = [];
 
   for (let week = 1; week <= 12; week += 1) {
     const weekInfo = weekData[week];
@@ -411,8 +519,17 @@ function collectAnalysisData(filters = activeFilters) {
 
         const entry = exerciseMap.get(key);
         entry.names.add(exercise.name);
-        entry.weeklyNotes[week - 1] = getExerciseNote(week, dayIdx, exIdx);
+        const noteValue = getExerciseNote(week, dayIdx, exIdx);
+        entry.weeklyNotes[week - 1] = noteValue;
         entry.weeklyRpe[week - 1] = parseRpe(getExerciseRpe(week, dayIdx, exIdx));
+
+        const noteKeywords = extractNoteKeywords(noteValue);
+        noteKeywords.forEach((keyword) => {
+          noteKeywordCounts.set(keyword, (noteKeywordCounts.get(keyword) || 0) + 1);
+          if ((keyword === "pain" || keyword === "fatigue") && week >= 10) {
+            recentFlags.push({ keyword, week, note: noteValue, exercise: exercise.name });
+          }
+        });
 
         for (let setNum = 1; setNum <= setCount; setNum += 1) {
           const raw = getStorageValue(week, dayIdx, exIdx, setNum);
@@ -424,6 +541,9 @@ function collectAnalysisData(filters = activeFilters) {
           entry.weeklyValues[week - 1].push(value);
           weeklyBuckets[week - 1].push(value);
           weeklyLoggedSets[week - 1] += 1;
+          const typeKey = day.type === "hyper" ? "hypertrophy" : day.type;
+          volumeByType[typeKey].loggedSets += 1;
+          volumeByType[typeKey].values.push(value);
           allValues.push(value);
         }
       });
@@ -437,11 +557,66 @@ function collectAnalysisData(filters = activeFilters) {
 
   const filteredExercises = filters.notesOnly ? exercises.filter((entry) => hasNotesOrRpe(entry)) : exercises;
   const notesEligibleCount = exercises.filter((entry) => hasNotesOrRpe(entry)).length;
+  const weeklyAverages = weeklyBuckets.map((bucket) => average(bucket));
+  const weeklyDeltas = weeklyAverages.map((weekAvg, idx) => {
+    if (idx === 0 || weekAvg === null || weeklyAverages[idx - 1] === null) return null;
+    return weekAvg - weeklyAverages[idx - 1];
+  });
+  const movers = filteredExercises.map((entry) => {
+    const firstWeek = entry.weeklyValues.find((sets) => sets.length > 0);
+    const lastWeek = [...entry.weeklyValues].reverse().find((sets) => sets.length > 0);
+    const firstAvg = firstWeek ? average(firstWeek) : null;
+    const lastAvg = lastWeek ? average(lastWeek) : null;
+    const delta = firstAvg !== null && lastAvg !== null ? lastAvg - firstAvg : null;
+    return {
+      label: getExerciseDisplayName(entry),
+      delta,
+      prCount: entry.pr ? entry.pr.count : 0
+    };
+  }).filter((item) => item.delta !== null);
+
+  const bestMovers = [...movers].sort((a, b) => b.delta - a.delta).slice(0, 5);
+  const worstMovers = [...movers].sort((a, b) => a.delta - b.delta).slice(0, 5);
+
+  let currentStreak = 0;
+  for (let idx = weeklyLoggedSets.length - 1; idx >= 0; idx -= 1) {
+    if (weeklyLoggedSets[idx] > 0) currentStreak += 1;
+    else break;
+  }
+  let longestStreak = 0;
+  let running = 0;
+  weeklyLoggedSets.forEach((count) => {
+    if (count > 0) {
+      running += 1;
+      longestStreak = Math.max(longestStreak, running);
+    } else {
+      running = 0;
+    }
+  });
+  const lowCompletionWeeks = weeklyPlannedSets
+    .map((planned, idx) => ({ week: idx + 1, completion: planned ? (weeklyLoggedSets[idx] / planned) * 100 : 0 }))
+    .filter((item) => item.completion < 40);
+
+  const noteInsights = {
+    keywordCounts: [...noteKeywordCounts.entries()].sort((a, b) => b[1] - a[1]),
+    recentFlags: recentFlags.slice(-5)
+  };
+  const progressDelta = weeklyAverages[0] !== null && weeklyAverages[11] !== null ? weeklyAverages[11] - weeklyAverages[0] : null;
+  const recentCompletionValues = weeklyPlannedSets
+    .map((planned, idx) => (planned ? (weeklyLoggedSets[idx] / planned) * 100 : null))
+    .slice(-4)
+    .filter((value) => value !== null);
+  const recentCompletion = recentCompletionValues.length ? average(recentCompletionValues) : null;
+  const fatigueSignals = noteInsights.recentFlags.length + filteredExercises.reduce((sum, entry) => {
+    const recentRpe = entry.weeklyRpe.slice(-2).filter((value) => value !== null && value >= 9).length;
+    return sum + recentRpe;
+  }, 0);
 
   return {
     exercises: filteredExercises,
     notesEligibleCount,
-    weeklyAverages: weeklyBuckets.map((bucket) => average(bucket)),
+    weeklyAverages,
+    weeklyDeltas,
     weeklyCompletion: weeklyPlannedSets.map((planned, idx) => {
       if (!planned) return null;
       return (weeklyLoggedSets[idx] / planned) * 100;
@@ -450,6 +625,31 @@ function collectAnalysisData(filters = activeFilters) {
       totalLogged: weeklyLoggedSets.reduce((sum, value) => sum + value, 0),
       totalPlanned: weeklyPlannedSets.reduce((sum, value) => sum + value, 0)
     },
+    readiness: {
+      consistency: recentCompletion,
+      progressDelta,
+      fatigueSignals
+    },
+    movers: {
+      best: bestMovers,
+      worst: worstMovers
+    },
+    streaks: {
+      current: currentStreak,
+      longest: longestStreak,
+      lowCompletionWeeks
+    },
+    volumeByType: {
+      strength: {
+        loggedSets: volumeByType.strength.loggedSets,
+        avgLoad: average(volumeByType.strength.values)
+      },
+      hypertrophy: {
+        loggedSets: volumeByType.hypertrophy.loggedSets,
+        avgLoad: average(volumeByType.hypertrophy.values)
+      }
+    },
+    noteInsights,
     allValues,
     prSummary: computePrSummary(filteredExercises)
   };
@@ -489,6 +689,45 @@ function renderSummary(analysisData) {
 
     card.append(key, value);
     summaryEl.appendChild(card);
+  });
+}
+
+function renderReadiness(analysisData) {
+  const el = document.getElementById("readinessCards");
+  if (!el) return;
+  el.innerHTML = "";
+
+  const consistencyState = analysisData.readiness.consistency === null
+    ? "--"
+    : analysisData.readiness.consistency >= 75 ? "HIGH" : analysisData.readiness.consistency >= 50 ? "MOD" : "LOW";
+  const progressState = analysisData.readiness.progressDelta === null
+    ? "--"
+    : analysisData.readiness.progressDelta > 0 ? "UP" : analysisData.readiness.progressDelta < 0 ? "DOWN" : "FLAT";
+  const fatigueState = analysisData.readiness.fatigueSignals >= 5
+    ? "ELEVATED"
+    : analysisData.readiness.fatigueSignals >= 2 ? "MODERATE" : "LOW";
+
+  const cards = [
+    { label: "Consistency", value: consistencyState, warn: consistencyState === "LOW" },
+    { label: "Progress", value: progressState, warn: progressState === "DOWN" },
+    { label: "Fatigue Risk", value: fatigueState, warn: fatigueState === "ELEVATED" }
+  ];
+
+  cards.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "readiness-card";
+
+    const key = document.createElement("span");
+    key.className = "readiness-key";
+    key.textContent = item.label;
+
+    const value = document.createElement("span");
+    value.className = "readiness-value";
+    if (item.warn) value.classList.add("warn");
+    value.textContent = item.value;
+
+    card.append(key, value);
+    el.appendChild(card);
   });
 }
 
@@ -651,6 +890,220 @@ function renderCompletion(analysisData) {
   });
 }
 
+function renderDeltaHeatmap(analysisData) {
+  const el = document.getElementById("deltaHeatmap");
+  if (!el) return;
+  el.innerHTML = "";
+
+  analysisData.weeklyDeltas.forEach((delta, idx) => {
+    const chip = document.createElement("article");
+    chip.className = "heatmap-chip";
+    chip.style.background = getDeltaChipStyle(delta);
+
+    const key = document.createElement("span");
+    key.className = "week-chip-key";
+    key.textContent = `WK ${idx + 1}`;
+
+    const value = document.createElement("span");
+    value.className = "heatmap-chip-value";
+    value.textContent = idx === 0 ? "--" : formatDelta(delta);
+
+    chip.append(key, value);
+    el.appendChild(chip);
+  });
+}
+
+function renderMovers(analysisData) {
+  const el = document.getElementById("moversPanel");
+  if (!el) return;
+  el.innerHTML = "";
+
+  const cards = [
+    { title: "Best Movers", items: analysisData.movers.best },
+    { title: "Needs Attention", items: analysisData.movers.worst }
+  ];
+
+  cards.forEach((group) => {
+    const card = document.createElement("article");
+    card.className = "insight-card";
+
+    const title = document.createElement("div");
+    title.className = "insight-title";
+    title.textContent = group.title;
+    card.appendChild(title);
+
+    if (!group.items.length) {
+      card.appendChild(createEmptyText("Not enough movement data yet."));
+    } else {
+      const list = document.createElement("div");
+      list.className = "insight-list";
+      group.items.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "insight-row";
+
+        const name = document.createElement("strong");
+        name.textContent = item.label;
+
+        const value = document.createElement("span");
+        value.textContent = formatDelta(item.delta);
+
+        row.append(name, value);
+        list.appendChild(row);
+      });
+      card.appendChild(list);
+    }
+
+    el.appendChild(card);
+  });
+}
+
+function renderStreaks(analysisData) {
+  const el = document.getElementById("streakCards");
+  if (!el) return;
+  el.innerHTML = "";
+
+  const cards = [
+    { label: "Current Streak", value: `${analysisData.streaks.current} weeks` },
+    { label: "Longest Streak", value: `${analysisData.streaks.longest} weeks` }
+  ];
+
+  cards.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "streak-card";
+
+    const key = document.createElement("div");
+    key.className = "insight-title";
+    key.textContent = item.label;
+
+    const value = document.createElement("div");
+    value.className = "readiness-value";
+    value.textContent = item.value;
+
+    card.append(key, value);
+    el.appendChild(card);
+  });
+
+  const missed = document.createElement("article");
+  missed.className = "streak-card";
+  const missedTitle = document.createElement("div");
+  missedTitle.className = "insight-title";
+  missedTitle.textContent = "Low Completion Weeks";
+  missed.appendChild(missedTitle);
+
+  if (!analysisData.streaks.lowCompletionWeeks.length) {
+    missed.appendChild(createEmptyText("No low-completion weeks in this scope."));
+  } else {
+    const list = document.createElement("div");
+    list.className = "insight-list";
+    analysisData.streaks.lowCompletionWeeks.slice(0, 6).forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "insight-row";
+      const wk = document.createElement("strong");
+      wk.textContent = `WK ${item.week}`;
+      const value = document.createElement("span");
+      value.textContent = formatPercent(item.completion);
+      row.append(wk, value);
+      list.appendChild(row);
+    });
+    missed.appendChild(list);
+  }
+
+  el.appendChild(missed);
+}
+
+function renderVolumeProxy(analysisData) {
+  const el = document.getElementById("volumeCards");
+  if (!el) return;
+  el.innerHTML = "";
+
+  ["strength", "hypertrophy"].forEach((typeKey) => {
+    const data = analysisData.volumeByType[typeKey];
+    const card = document.createElement("article");
+    card.className = "volume-card";
+    const title = document.createElement("div");
+    title.className = "insight-title";
+    title.textContent = typeKey === "strength" ? "Strength Days" : "Hypertrophy Days";
+
+    const list = document.createElement("div");
+    list.className = "insight-list";
+    const rows = [
+      { label: "Logged Sets", value: `${data.loggedSets}` },
+      { label: "Average Load", value: formatWeight(data.avgLoad) }
+    ];
+    rows.forEach((rowData) => {
+      const row = document.createElement("div");
+      row.className = "insight-row";
+      const label = document.createElement("strong");
+      label.textContent = rowData.label;
+      const value = document.createElement("span");
+      value.textContent = rowData.value;
+      row.append(label, value);
+      list.appendChild(row);
+    });
+
+    card.append(title, list);
+    el.appendChild(card);
+  });
+}
+
+function renderNoteInsights(analysisData) {
+  const el = document.getElementById("notesInsights");
+  if (!el) return;
+  el.innerHTML = "";
+
+  const frequencyCard = document.createElement("article");
+  frequencyCard.className = "note-insight-card";
+  const freqTitle = document.createElement("div");
+  freqTitle.className = "insight-title";
+  freqTitle.textContent = "Keyword Frequency";
+  frequencyCard.appendChild(freqTitle);
+
+  if (!analysisData.noteInsights.keywordCounts.length) {
+    frequencyCard.appendChild(createEmptyText("No note keywords found yet."));
+  } else {
+    const list = document.createElement("div");
+    list.className = "insight-list";
+    analysisData.noteInsights.keywordCounts.slice(0, 5).forEach(([keyword, count]) => {
+      const row = document.createElement("div");
+      row.className = "insight-row";
+      const name = document.createElement("strong");
+      name.textContent = keyword.toUpperCase();
+      const value = document.createElement("span");
+      value.textContent = `${count}`;
+      row.append(name, value);
+      list.appendChild(row);
+    });
+    frequencyCard.appendChild(list);
+  }
+  el.appendChild(frequencyCard);
+
+  const flagsCard = document.createElement("article");
+  flagsCard.className = "note-insight-card";
+  const flagsTitle = document.createElement("div");
+  flagsTitle.className = "insight-title";
+  flagsTitle.textContent = "Recent Risk Flags";
+  flagsCard.appendChild(flagsTitle);
+
+  if (!analysisData.noteInsights.recentFlags.length) {
+    flagsCard.appendChild(createEmptyText("No recent pain/fatigue flags in notes."));
+  } else {
+    const list = document.createElement("div");
+    list.className = "insight-list";
+    analysisData.noteInsights.recentFlags.forEach((flag) => {
+      const row = document.createElement("div");
+      row.className = "insight-row";
+      const name = document.createElement("strong");
+      name.textContent = `${flag.keyword.toUpperCase()} WK ${flag.week}`;
+      const value = document.createElement("span");
+      value.textContent = flag.exercise;
+      row.append(name, value);
+      list.appendChild(row);
+    });
+    flagsCard.appendChild(list);
+  }
+  el.appendChild(flagsCard);
+}
+
 function renderExerciseProgress(analysisData) {
   const dayEl = document.getElementById("dayAnalysis");
   if (!dayEl) return;
@@ -703,6 +1156,7 @@ function renderExerciseProgress(analysisData) {
     entries.forEach((entry) => {
       const row = document.createElement("div");
       row.className = "exercise-row";
+      row.addEventListener("click", () => openExerciseDetailDialog(entry));
 
       const name = document.createElement("div");
       name.className = "exercise-name";
@@ -868,9 +1322,15 @@ function renderAll() {
   const analysisData = collectAnalysisData();
   renderNotesOnlyCount(analysisData);
   renderSummary(analysisData);
+  renderReadiness(analysisData);
   renderPrSummary(analysisData);
   renderWeeklyAverages(analysisData);
   renderCompletion(analysisData);
+  renderDeltaHeatmap(analysisData);
+  renderMovers(analysisData);
+  renderStreaks(analysisData);
+  renderVolumeProxy(analysisData);
+  renderNoteInsights(analysisData);
   renderExerciseProgress(analysisData);
 }
 
@@ -878,6 +1338,7 @@ async function init() {
   setSyncStatusHandler(updateStatusUi);
   wirePinDialog(renderAll);
   wireDayTrendDialog();
+  wireExerciseDetailDialog();
   wireFilterControls();
   initAutoRetry(() => getSavedPin());
 

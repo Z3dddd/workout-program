@@ -223,9 +223,15 @@ body {
 }
 
 .summary-wrap,
+.readiness-wrap,
 .pr-wrap,
 .weekly-wrap,
 .completion-wrap,
+.heatmap-wrap,
+.insights-wrap,
+.streak-wrap,
+.volume-wrap,
+.notes-insight-wrap,
 .exercise-wrap {
   margin-top: 16px;
 }
@@ -262,6 +268,10 @@ body {
   border-color: var(--accent);
 }
 
+.filter-field-toggle {
+  justify-content: stretch;
+}
+
 .filter-toggle {
   min-height: 44px;
   border: 1px solid var(--border);
@@ -277,6 +287,7 @@ body {
   color: var(--text);
   text-transform: uppercase;
   padding: 8px 9px;
+  cursor: pointer;
 }
 
 .filter-toggle input {
@@ -332,6 +343,40 @@ body {
 
 .summary-value.negative {
   color: var(--ramp);
+}
+
+.readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.readiness-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.readiness-key {
+  display: block;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.readiness-value {
+  display: block;
+  margin-top: 4px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.readiness-value.warn {
+  color: #ff8a66;
 }
 
 .pr-grid {
@@ -471,6 +516,78 @@ body {
   font-family: "DM Mono", monospace;
 }
 
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.heatmap-chip {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface);
+}
+
+.heatmap-chip-value {
+  display: block;
+  margin-top: 2px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.insights-grid,
+.streak-grid,
+.volume-grid,
+.notes-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.insight-card,
+.streak-card,
+.volume-card,
+.note-insight-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.insight-title {
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.insight-list {
+  display: grid;
+  gap: 6px;
+}
+
+.insight-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.insight-row strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.insight-row span {
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .day-analysis {
   display: grid;
   gap: 10px;
@@ -549,6 +666,11 @@ body {
 .exercise-row {
   padding: 10px 12px;
   border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.exercise-row:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .exercise-name {
@@ -597,6 +719,66 @@ body {
   color: var(--text);
   font-size: 11px;
   line-height: 1.4;
+}
+
+.exercise-detail-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.exercise-detail-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.exercise-detail-card {
+  width: min(700px, calc(100vw - 16px));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.exercise-detail-head h3 {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(24px, 7vw, 40px);
+  line-height: 1;
+}
+
+.exercise-detail-meta {
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.exercise-detail-trend {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.exercise-detail-logs {
+  display: grid;
+  gap: 6px;
+}
+
+.exercise-detail-log {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--text);
 }
 
 .empty {
@@ -672,6 +854,10 @@ body {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
+  .heatmap-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
   .analysis-shell {
     padding: 20px 20px 80px;
   }
@@ -679,6 +865,15 @@ body {
 
 @media (max-width: 420px) {
   .analysis-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .readiness-grid,
+  .insights-grid,
+  .streak-grid,
+  .volume-grid,
+  .notes-insight-grid,
+  .completion-summary {
     grid-template-columns: 1fr;
   }
 

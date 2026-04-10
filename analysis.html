@@ -44,10 +44,13 @@
             <option value="ramping">Ramping</option>
           </select>
         </label>
-        <label class="filter-toggle" for="notesOnlyFilter">
-          <input id="notesOnlyFilter" type="checkbox">
-          <span>Notes Only</span>
-          <span id="notesOnlyCount" class="filter-count">0</span>
+        <label class="filter-field filter-field-toggle" for="notesOnlyFilter">
+          <span>View</span>
+          <span class="filter-toggle">
+            <input id="notesOnlyFilter" type="checkbox">
+            <span>Notes Only</span>
+            <span id="notesOnlyCount" class="filter-count">0</span>
+          </span>
         </label>
       </div>
     </section>
@@ -55,6 +58,11 @@
     <section class="summary-wrap">
       <h2 class="section-title">Overview</h2>
       <div id="summaryCards" class="summary-grid"></div>
+    </section>
+
+    <section class="readiness-wrap">
+      <h2 class="section-title">Training Readiness</h2>
+      <div id="readinessCards" class="readiness-grid"></div>
     </section>
 
     <section class="pr-wrap">
@@ -71,6 +79,31 @@
       <h2 class="section-title">Weekly Completion</h2>
       <div id="completionSummary" class="completion-summary"></div>
       <div id="completionWeekly" class="completion-grid"></div>
+    </section>
+
+    <section class="heatmap-wrap">
+      <h2 class="section-title">Week-over-Week Delta</h2>
+      <div id="deltaHeatmap" class="heatmap-grid"></div>
+    </section>
+
+    <section class="insights-wrap">
+      <h2 class="section-title">Progress Insights</h2>
+      <div id="moversPanel" class="insights-grid"></div>
+    </section>
+
+    <section class="streak-wrap">
+      <h2 class="section-title">Streaks And Missed Weeks</h2>
+      <div id="streakCards" class="streak-grid"></div>
+    </section>
+
+    <section class="volume-wrap">
+      <h2 class="section-title">Volume Proxy By Split</h2>
+      <div id="volumeCards" class="volume-grid"></div>
+    </section>
+
+    <section class="notes-insight-wrap">
+      <h2 class="section-title">Note Intelligence</h2>
+      <div id="notesInsights" class="notes-insight-grid"></div>
     </section>
 
     <section class="exercise-wrap">
@@ -108,6 +141,18 @@
         <canvas id="dayTrendCanvas"></canvas>
       </div>
       <p id="dayTrendEmpty" class="empty chart-empty" hidden>No weekly data available for this day yet.</p>
+    </div>
+  </dialog>
+
+  <dialog class="exercise-detail-dialog" id="exerciseDetailDialog">
+    <div class="exercise-detail-card">
+      <div class="exercise-detail-head">
+        <h3 id="exerciseDetailTitle">EXERCISE DETAIL</h3>
+        <button type="button" class="sync-btn ghost chart-close-btn" id="closeExerciseDetailBtn">CLOSE</button>
+      </div>
+      <p id="exerciseDetailMeta" class="exercise-detail-meta"></p>
+      <div id="exerciseDetailTrend" class="exercise-detail-trend"></div>
+      <div id="exerciseDetailLogs" class="exercise-detail-logs"></div>
     </div>
   </dialog>
 
