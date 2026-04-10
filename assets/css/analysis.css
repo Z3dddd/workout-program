@@ -115,6 +115,10 @@ body {
   color: var(--accent);
 }
 
+.sync-status.pending {
+  color: #ffd166;
+}
+
 .sync-status.error {
   color: var(--ramp);
 }

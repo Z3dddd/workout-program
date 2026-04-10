@@ -4,7 +4,10 @@ import { applyRemoteEntries } from "./storage.js";
 import {
   clearSavedPin,
   enqueueEntryChange,
+  flushPending,
+  getPendingEntries,
   getSavedPin,
+  initAutoRetry,
   isSyncEnabled,
   pullRemote,
   savePin,
@@ -18,7 +21,7 @@ let activePin = "";
 function updateStatusUi(payload) {
   const statusEl = document.getElementById("syncStatus");
   if (!statusEl) return;
-  statusEl.classList.remove("syncing", "synced", "error");
+  statusEl.classList.remove("syncing", "synced", "error", "pending");
   statusEl.classList.add(payload.status);
   statusEl.textContent = payload.message || payload.status.toUpperCase();
 }
@@ -53,6 +56,8 @@ function wirePinDialog() {
     try {
       const remoteEntries = await pullRemote(activePin);
       applyRemoteEntries(remoteEntries);
+      applyRemoteEntries(getPendingEntries());
+      await flushPending(activePin);
       setSyncStatus("synced", "Sync enabled");
       dialog.close();
       window.location.reload();
@@ -83,6 +88,7 @@ async function init() {
   setSyncStatusHandler(updateStatusUi);
   wirePinDialog();
   wireLiveSync();
+  initAutoRetry(() => activePin);
 
   if (!isSyncEnabled()) {
     setSyncStatus("error", "Local-only (configure Supabase keys)");
@@ -92,6 +98,8 @@ async function init() {
       try {
         const remoteEntries = await pullRemote(activePin);
         applyRemoteEntries(remoteEntries);
+        applyRemoteEntries(getPendingEntries());
+        await flushPending(activePin);
       } catch (error) {
         setSyncStatus("error", error.message);
       }

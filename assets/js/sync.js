@@ -3,10 +3,12 @@ import { SUPABASE_CONFIG, hasSupabaseConfig } from "./supabase-config.js";
 const SYNC_PIN_SESSION_KEY = "sync_pin_session";
 const SYNC_PIN_DEVICE_KEY = "sync_pin_device";
 const SYNC_LAST_PULL_KEY = "sync_last_pull_at";
+const SYNC_OUTBOX_KEY = "sync_outbox_v1";
 
-let pendingEntries = [];
 let flushTimer = null;
 let statusHandler = null;
+let isFlushing = false;
+let autoRetryStarted = false;
 
 function setSyncStatus(status, message = "") {
   if (typeof statusHandler === "function") {
@@ -25,6 +27,40 @@ function isSyncEnabled() {
 function getFunctionUrl() {
   const trimmed = SUPABASE_CONFIG.url.replace(/\/+$/, "");
   return `${trimmed}/functions/v1/${SUPABASE_CONFIG.functionName}`;
+}
+
+function getEntryId(entry) {
+  return `w${entry.week}_d${entry.day}_e${entry.exercise}_s${entry.set}`;
+}
+
+function readOutbox() {
+  try {
+    const raw = localStorage.getItem(SYNC_OUTBOX_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOutbox(entries) {
+  localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(entries));
+}
+
+function updateOutboxStatusMessage(prefix = "Pending") {
+  const count = readOutbox().length;
+  if (count > 0) {
+    setSyncStatus("pending", `${prefix} ${count} change${count === 1 ? "" : "s"}`);
+  }
+}
+
+function getOutboxSize() {
+  return readOutbox().length;
+}
+
+function getPendingEntries() {
+  return readOutbox();
 }
 
 function savePin(pin, rememberOnDevice) {
@@ -70,13 +106,23 @@ async function pullRemote(pin) {
   setSyncStatus("syncing", "Pulling latest data...");
   const result = await callSyncFunction({ action: "pull" }, pin);
   localStorage.setItem(SYNC_LAST_PULL_KEY, new Date().toISOString());
-  setSyncStatus("synced", "Latest data pulled");
+  if (getOutboxSize() > 0) {
+    updateOutboxStatusMessage("Pending");
+  } else {
+    setSyncStatus("synced", "Latest data pulled");
+  }
   return Array.isArray(result.entries) ? result.entries : [];
 }
 
 function enqueueEntryChange(entry) {
   if (!isSyncEnabled()) return;
-  const existingIndex = pendingEntries.findIndex((item) =>
+  const normalized = {
+    ...entry,
+    updatedAt: entry.updatedAt ?? new Date().toISOString()
+  };
+
+  const outbox = readOutbox();
+  const existingIndex = outbox.findIndex((item) =>
     item.week === entry.week
     && item.day === entry.day
     && item.exercise === entry.exercise
@@ -84,25 +130,51 @@ function enqueueEntryChange(entry) {
   );
 
   if (existingIndex >= 0) {
-    pendingEntries[existingIndex] = entry;
+    outbox[existingIndex] = normalized;
   } else {
-    pendingEntries.push(entry);
+    outbox.push(normalized);
   }
+
+  writeOutbox(outbox);
+  updateOutboxStatusMessage("Pending");
 }
 
 async function flushPending(pin) {
   if (!isSyncEnabled()) return;
-  if (!pendingEntries.length) return;
-  const batch = [...pendingEntries];
-  pendingEntries = [];
+  if (!pin) {
+    updateOutboxStatusMessage("PIN required. Pending");
+    return;
+  }
+  if (isFlushing) return;
+
+  const outbox = readOutbox();
+  if (!outbox.length) {
+    setSyncStatus("synced", "All changes synced");
+    return;
+  }
+
+  isFlushing = true;
+  const batch = [...outbox];
+  const batchVersion = new Map(batch.map((entry) => [getEntryId(entry), entry.updatedAt]));
   setSyncStatus("syncing", "Syncing changes...");
   try {
     await callSyncFunction({ action: "push", entries: batch }, pin);
-    setSyncStatus("synced", "All changes synced");
+    const currentOutbox = readOutbox();
+    const remaining = currentOutbox.filter((entry) => {
+      const id = getEntryId(entry);
+      return batchVersion.get(id) !== entry.updatedAt;
+    });
+    writeOutbox(remaining);
+    if (remaining.length > 0) {
+      updateOutboxStatusMessage("Pending");
+    } else {
+      setSyncStatus("synced", "All changes synced");
+    }
   } catch (error) {
-    pendingEntries = [...batch, ...pendingEntries];
-    setSyncStatus("error", error.message);
+    setSyncStatus("error", `${error.message} (kept locally, retrying)`);
     throw error;
+  } finally {
+    isFlushing = false;
   }
 }
 
@@ -116,6 +188,23 @@ function scheduleFlush(pin) {
   }, 900);
 }
 
+function initAutoRetry(pinProvider) {
+  if (!isSyncEnabled() || autoRetryStarted) return;
+  autoRetryStarted = true;
+
+  const retry = () => {
+    const pin = typeof pinProvider === "function" ? pinProvider() : "";
+    if (!pin) return;
+    flushPending(pin).catch(() => {});
+  };
+
+  window.addEventListener("online", retry);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) retry();
+  });
+  setInterval(retry, 20000);
+}
+
 function getLastPullAt() {
   return localStorage.getItem(SYNC_LAST_PULL_KEY) || "";
 }
@@ -125,7 +214,10 @@ export {
   enqueueEntryChange,
   flushPending,
   getLastPullAt,
+  getOutboxSize,
+  getPendingEntries,
   getSavedPin,
+  initAutoRetry,
   isSyncEnabled,
   pullRemote,
   savePin,
