@@ -71,6 +71,76 @@ body {
   line-height: 1.4;
 }
 
+.day-quick-nav {
+  margin-bottom: 14px;
+}
+
+.day-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.day-tab {
+  min-height: 64px;
+  border: 1px solid var(--border);
+  border-top: 2px solid transparent;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #11131b 0%, #0e1016 100%);
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  padding: 6px 4px;
+}
+
+.day-tab-top {
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #596072;
+}
+
+.day-tab-mid {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: 0.8px;
+}
+
+.day-tab-bottom {
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+
+.day-tab.strength {
+  border-top-color: var(--accent);
+}
+
+.day-tab.strength .day-tab-mid,
+.day-tab.strength .day-tab-bottom {
+  color: var(--accent);
+}
+
+.day-tab.hypertrophy {
+  border-top-color: #9f67ff;
+}
+
+.day-tab.hypertrophy .day-tab-mid,
+.day-tab.hypertrophy .day-tab-bottom {
+  color: #9f67ff;
+}
+
+.day-tab.active {
+  border-color: var(--text);
+  transform: translateY(-1px);
+}
+
 .week-nav {
   position: sticky;
   top: 0;
@@ -367,6 +437,10 @@ body {
 }
 
 @media (min-width: 700px) {
+  .day-tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
   .week-buttons {
     grid-template-columns: repeat(6, 1fr);
   }

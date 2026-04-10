@@ -1,5 +1,7 @@
 import { getWorkoutData, saveWorkoutData } from "./storage.js";
 
+let activeWeekNum = 1;
+
 function getSetCount(setText) {
   const match = setText.match(/^\s*(\d+)/);
   if (!match) {
@@ -11,6 +13,8 @@ function getSetCount(setText) {
 function createDayCard(day, weekNum, dayIdx) {
   const dayCard = document.createElement("div");
   dayCard.className = "day-card";
+  dayCard.id = `week-${weekNum}-day-${dayIdx + 1}`;
+  dayCard.dataset.dayIndex = String(dayIdx + 1);
 
   const dayHeader = document.createElement("button");
   dayHeader.className = "day-header";
@@ -18,7 +22,9 @@ function createDayCard(day, weekNum, dayIdx) {
   dayHeader.setAttribute("aria-expanded", "false");
   dayHeader.addEventListener("click", () => {
     dayCard.classList.toggle("expanded");
-    dayHeader.setAttribute("aria-expanded", String(dayCard.classList.contains("expanded")));
+    const isExpanded = dayCard.classList.contains("expanded");
+    dayHeader.setAttribute("aria-expanded", String(isExpanded));
+    updateDayTabActiveState(isExpanded ? dayIdx + 1 : 0);
   });
 
   const dayTitleWrap = document.createElement("div");
@@ -108,15 +114,85 @@ function createDayCard(day, weekNum, dayIdx) {
   return dayCard;
 }
 
+function getDayTabType(day) {
+  return day.type === "strength" ? "strength" : "hypertrophy";
+}
+
+function updateDayTabActiveState(dayNum) {
+  document.querySelectorAll(".day-tab").forEach((tab) => {
+    const isActive = tab.dataset.day === String(dayNum);
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function showDay(dayNum) {
+  const activeWeekEl = document.getElementById(`week-${activeWeekNum}`);
+  if (!activeWeekEl) return;
+
+  const dayCards = activeWeekEl.querySelectorAll(".day-card");
+  dayCards.forEach((card) => {
+    const header = card.querySelector(".day-header");
+    const isTarget = card.dataset.dayIndex === String(dayNum);
+    card.classList.toggle("expanded", isTarget);
+    if (header) header.setAttribute("aria-expanded", String(isTarget));
+  });
+
+  updateDayTabActiveState(dayNum);
+
+  const targetCard = document.getElementById(`week-${activeWeekNum}-day-${dayNum}`);
+  if (targetCard) {
+    targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function renderDayTabs(weekData) {
+  const dayTabsEl = document.getElementById("dayTabs");
+  if (!dayTabsEl) return;
+
+  const dayTemplate = weekData[1].days;
+  dayTemplate.forEach((day, idx) => {
+    const dayNum = idx + 1;
+    const [, dayLabel] = day.name.split(" - ");
+    const isStrength = getDayTabType(day) === "strength";
+
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `day-tab ${isStrength ? "strength" : "hypertrophy"}`;
+    tab.dataset.day = String(dayNum);
+    tab.setAttribute("aria-pressed", "false");
+
+    const top = document.createElement("span");
+    top.className = "day-tab-top";
+    top.textContent = `DAY ${dayNum}`;
+
+    const mid = document.createElement("span");
+    mid.className = "day-tab-mid";
+    mid.textContent = dayLabel ? dayLabel.toUpperCase() : day.name.toUpperCase();
+
+    const bottom = document.createElement("span");
+    bottom.className = "day-tab-bottom";
+    bottom.textContent = isStrength ? "STRENGTH" : "HYPERTROPHY";
+
+    tab.append(top, mid, bottom);
+    tab.addEventListener("click", () => showDay(dayNum));
+    dayTabsEl.appendChild(tab);
+  });
+}
+
 function showWeek(weekNum) {
+  activeWeekNum = weekNum;
   document.querySelectorAll(".week-content").forEach((el) => el.classList.remove("active"));
   document.querySelectorAll(".week-btn").forEach((el) => el.classList.remove("active"));
   document.getElementById(`week-${weekNum}`)?.classList.add("active");
   document.querySelector(`.week-btn[data-week="${weekNum}"]`)?.classList.add("active");
+  updateDayTabActiveState(0);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderProgram(weekData) {
+  renderDayTabs(weekData);
+
   const weekButtonsEl = document.getElementById("weekButtons");
   const weekContainer = document.getElementById("weekContainer");
 
