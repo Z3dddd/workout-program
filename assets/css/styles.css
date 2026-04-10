@@ -159,14 +159,18 @@ body {
 }
 
 .day-header {
+  width: 100%;
   min-height: 48px;
   padding: 12px 14px;
   background: var(--surface);
+  border: none;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   user-select: none;
+  text-align: left;
+  appearance: none;
 }
 
 .day-header:focus-visible {
