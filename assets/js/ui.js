@@ -1,6 +1,7 @@
 import { getWorkoutData, saveWorkoutData } from "./storage.js";
 
 let activeWeekNum = 1;
+let weekPhaseMap = {};
 
 function getSetCount(setText) {
   const match = setText.match(/^\s*(\d+)/);
@@ -187,10 +188,30 @@ function showWeek(weekNum) {
   document.getElementById(`week-${weekNum}`)?.classList.add("active");
   document.querySelector(`.week-btn[data-week="${weekNum}"]`)?.classList.add("active");
   updateDayTabActiveState(0);
+
+  const foundationInfoEl = document.getElementById("foundationWeekInfo");
+  const rampingInfoEl = document.getElementById("rampingWeekInfo");
+  if (foundationInfoEl) {
+    const isFoundation = weekPhaseMap[weekNum] === "foundation";
+    const isRamping = weekPhaseMap[weekNum] === "ramping";
+    foundationInfoEl.hidden = !isFoundation;
+    if (rampingInfoEl) {
+      rampingInfoEl.hidden = !isRamping;
+    }
+  } else if (rampingInfoEl) {
+    const isRamping = weekPhaseMap[weekNum] === "ramping";
+    rampingInfoEl.hidden = !isRamping;
+  }
+
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderProgram(weekData) {
+  weekPhaseMap = {};
+  for (let i = 1; i <= 12; i += 1) {
+    weekPhaseMap[i] = weekData[i].phase;
+  }
+
   renderDayTabs(weekData);
 
   const weekButtonsEl = document.getElementById("weekButtons");
