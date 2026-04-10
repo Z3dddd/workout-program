@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>12-Week Bodybuilding Transformation</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111114;
+    --card: #17171c;
+    --border: #2a2a35;
+    --accent: #e8ff00;
+    --accent2: #ff4d00;
+    --text: #e8e8ef;
+    --muted: #5a5a72;
+    --found: #00c2ff;
+    --ramp: #ff4d00;
+  }
+
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 16px 12px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hero {
+    margin: 0 auto 24px;
+    border-left: 3px solid var(--accent);
+    padding-left: 14px;
+  }
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 9vw, 48px);
+    line-height: 0.92;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 9px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+  }
+
+  /* Week selector */
+  .week-nav {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0;
+    margin-bottom: 16px;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+  .week-buttons {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+  }
+  .week-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 9px 3px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .week-btn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  .week-btn.foundation.active {
+    background: var(--found);
+    border-color: var(--found);
+  }
+  .week-btn.ramping.active {
+    background: var(--ramp);
+    border-color: var(--ramp);
+    color: #fff;
+  }
+
+  /* Phase indicator */
+  .phase-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .phase-tag.foundation { 
+    color: var(--found); 
+    border-left: 3px solid var(--found);
+  }
+  .phase-tag.ramping { 
+    color: var(--ramp);
+    border-left: 3px solid var(--ramp);
+  }
+
+  /* Week content */
+  .week-content {
+    display: none;
+  }
+  .week-content.active {
+    display: block;
+  }
+
+  /* Day cards */
+  .day-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  
+  .day-header {
+    padding: 12px 14px;
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .day-title-wrap {
+    flex: 1;
+  }
+  .day-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 4px;
+  }
+  .day-badge.strength {
+    background: #1e1e00;
+    color: var(--accent);
+    border: 1px solid #3a3a00;
+  }
+  .day-badge.hyper {
+    background: #1c1030;
+    color: #c084fc;
+    border: 1px solid #3d1d6e;
+  }
+  .day-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px;
+    letter-spacing: 0.8px;
+    color: var(--found);
+  }
+  .expand-icon {
+    font-size: 16px;
+    color: var(--muted);
+    transition: transform 0.3s;
+  }
+  .day-card.expanded .expand-icon {
+    transform: rotate(180deg);
+  }
+
+  .day-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .day-card.expanded .day-content {
+    max-height: 3500px;
+  }
+
+  /* Exercise list */
+  .exercise {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .exercise:last-child {
+    border-bottom: none;
+  }
+  
+  .ex-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 5px;
+  }
+  .ex-name.highlight {
+    color: var(--accent);
+  }
+  .ex-name.ramp-highlight {
+    color: var(--ramp);
+  }
+  
+  .ex-meta {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    flex-wrap: wrap;
+    margin-bottom: 7px;
+  }
+  .ex-sets {
+    color: var(--muted);
+  }
+  .ex-rpe {
+    color: var(--text);
+  }
+  .ex-rpe.rpe-10 {
+    color: var(--ramp);
+    font-weight: 500;
+  }
+
+  /* Weight tracking */
+  .weight-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+    gap: 5px;
+    margin-top: 7px;
+  }
+  .weight-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .weight-label {
+    font-size: 8px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .weight-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 5px;
+    border-radius: 3px;
+    text-align: center;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+  .weight-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--card);
+  }
+  .weight-input::placeholder {
+    color: var(--muted);
+    opacity: 0.4;
+  }
+
+  /* Notes section */
+  .notes {
+    margin-top: 24px;
+    padding: 16px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 5px;
+  }
+  .notes h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .notes ul {
+    list-style: none;
+  }
+  .notes li {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding-left: 12px;
+    position: relative;
+  }
+  .notes li:before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 13px;
+  }
+  .notes strong {
+    color: var(--text);
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 380px) {
+    .week-buttons {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    body {
+      padding: 12px 10px 50px;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-label">JEFF NIPPARD · 6-DAY PPL×2</div>
+  <h1>BODYBUILDING<br><span>TRANSFORMATION</span></h1>
+  <div class="hero-sub">12 WEEKS · PUSH/PULL/LEGS × 2 DAILY<br>FOUNDATION (WK 1–5) → RAMPING (WK 6–12)</div>
+</div>
+
+<div class="week-nav">
+  <div class="week-buttons" id="weekButtons"></div>
+</div>
+
+<div id="weekContainer"></div>
+
+<div class="notes">
+  <h3>// PROGRAM NOTES</h3>
+  <ul>
+    <li><strong>Split Logic:</strong> Days 1–3 strength-focused (3–5 min rest). Days 4–6 hypertrophy (90–120 sec). Double frequency/muscle weekly.</li>
+    <li><strong>RPE 10 ✕</strong> = final set to absolute failure — always last exercise.</li>
+    <li><strong style="color:var(--found)">Foundation (WK 1–5):</strong> Add 2.5–5kg weekly. Pendlay Row & Smith Squat anchors.</li>
+    <li><strong style="color:var(--ramp)">Ramping (WK 6–12):</strong> Meadows Row, Super-Stretch Fly, Meadows Lateral. Full eccentric stretch.</li>
+    <li><strong>Volume Ramp:</strong> Hypertrophy days +1 set/muscle/week WK 6–11. Strength days keep volume, increase load. WK 12 tapers.</li>
+    <li><strong>Recovery:</strong> Day 7 mandatory rest. Protein ≥1.8g/kg, +200–300 kcal surplus.</li>
+  </ul>
+</div>
+
+<script>
+// Complete 12-week program data with all variations
+const weekData = [
+  null, // Index 0 placeholder
+  
+  // WEEK 1 - Foundation
+  {
+    phase: 'foundation',
+    days: [
+      { name: 'Day 1 - Push', type: 'strength', exercises: [
+        { name: 'Flat Barbell Bench Press', sets: '5 × 3–5', rpe: 'RPE 7–8' },
+        { name: 'Machine Shoulder Press', sets: '4 × 4–6', rpe: 'RPE 7–8' },
+        { name: 'Incline DB Press', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Cable Lateral Raise', sets: '3 × 12–15', rpe: 'RPE 8' },
+        { name: 'Skull Crushers (EZ-Bar)', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Tricep Pushdown', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 2 - Pull', type: 'strength', exercises: [
+        { name: 'Pendlay Row', sets: '5 × 3–5', rpe: 'RPE 7–8', highlight: 'foundation' },
+        { name: 'Lat Pulldown (wide grip)', sets: '4 × 4–6', rpe: 'RPE 7–8' },
+        { name: 'Barbell Shrug', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Cable Row (close grip)', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'EZ-Bar Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Hammer Curl', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 3 - Legs', type: 'strength', exercises: [
+        { name: 'Smith Machine Squat', sets: '5 × 3–5', rpe: 'RPE 7–8', highlight: 'foundation' },
+        { name: 'Romanian Deadlift', sets: '4 × 4–6', rpe: 'RPE 7–8' },
+        { name: 'Leg Press', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Seated Leg Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Standing Calf Raise', sets: '4 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 4 - Push', type: 'hyper', exercises: [
+        { name: 'Incline Barbell Press', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Flat DB Fly', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Machine Shoulder Press', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Cable Lateral Raise', sets: '4 × 15–20', rpe: 'RPE 8–9' },
+        { name: 'Cable Flyes', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+        { name: 'Overhead Tricep Extension', sets: '3 × 12–15', rpe: 'RPE 9' },
+        { name: 'Tricep Pushdown', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 5 - Pull', type: 'hyper', exercises: [
+        { name: 'Pendlay Row', sets: '3 × 8–10', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Lat Pulldown (wide grip)', sets: '4 × 10–12', rpe: 'RPE 8' },
+        { name: 'Seated Cable Row', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Face Pull', sets: '3 × 15–20', rpe: 'RPE 8' },
+        { name: 'Reverse Pec Deck', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+        { name: 'Incline DB Curl', sets: '3 × 10–12', rpe: 'RPE 9' },
+        { name: 'Hammer Curl', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 6 - Legs', type: 'hyper', exercises: [
+        { name: 'Smith Machine Squat', sets: '3 × 8–10', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Hack Squat', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Leg Extension', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+        { name: 'Lying Leg Curl', sets: '3 × 10–12', rpe: 'RPE 8–9' },
+        { name: 'Bulgarian Split Squat', sets: '3 × 10–12/leg', rpe: 'RPE 9' },
+        { name: 'Seated Calf Raise', sets: '4 × 15–20', rpe: 'RPE 9' },
+        { name: 'Cable Crunch', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]}
+    ]
+  },
+  
+  // WEEK 2 - Foundation (volume starts increasing on hypertrophy)
+  {
+    phase: 'foundation',
+    days: [
+      { name: 'Day 1 - Push', type: 'strength', exercises: [
+        { name: 'Flat Barbell Bench Press', sets: '5 × 3–5', rpe: 'RPE 8' },
+        { name: 'Machine Shoulder Press', sets: '4 × 4–6', rpe: 'RPE 8' },
+        { name: 'Incline DB Press', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Cable Lateral Raise', sets: '3 × 12–15', rpe: 'RPE 8' },
+        { name: 'Skull Crushers (EZ-Bar)', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Tricep Pushdown', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 2 - Pull', type: 'strength', exercises: [
+        { name: 'Pendlay Row', sets: '5 × 3–5', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Lat Pulldown (wide grip)', sets: '4 × 4–6', rpe: 'RPE 8' },
+        { name: 'Barbell Shrug', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Cable Row (close grip)', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'EZ-Bar Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Hammer Curl', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 3 - Legs', type: 'strength', exercises: [
+        { name: 'Smith Machine Squat', sets: '5 × 3–5', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Romanian Deadlift', sets: '4 × 4–6', rpe: 'RPE 8' },
+        { name: 'Leg Press', sets: '3 × 6–8', rpe: 'RPE 8' },
+        { name: 'Seated Leg Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+        { name: 'Standing Calf Raise', sets: '4 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 4 - Push', type: 'hyper', exercises: [
+        { name: 'Incline Barbell Press', sets: '4 × 8–10', rpe: 'RPE 8' },
+        { name: 'Flat DB Fly', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Machine Shoulder Press', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Cable Lateral Raise', sets: '4 × 15–20', rpe: 'RPE 8–9' },
+        { name: 'Cable Flyes', sets: '3 × 12–15', rpe: 'RPE 9' },
+        { name: 'Overhead Tricep Extension', sets: '3 × 12–15', rpe: 'RPE 9' },
+        { name: 'Tricep Pushdown', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 5 - Pull', type: 'hyper', exercises: [
+        { name: 'Pendlay Row', sets: '4 × 8–10', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Lat Pulldown (wide grip)', sets: '4 × 10–12', rpe: 'RPE 8' },
+        { name: 'Seated Cable Row', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Face Pull', sets: '3 × 15–20', rpe: 'RPE 8' },
+        { name: 'Reverse Pec Deck', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+        { name: 'Incline DB Curl', sets: '3 × 10–12', rpe: 'RPE 9' },
+        { name: 'Hammer Curl', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]},
+      { name: 'Day 6 - Legs', type: 'hyper', exercises: [
+        { name: 'Smith Machine Squat', sets: '4 × 8–10', rpe: 'RPE 8', highlight: 'foundation' },
+        { name: 'Hack Squat', sets: '3 × 10–12', rpe: 'RPE 8' },
+        { name: 'Leg Extension', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+        { name: 'Lying Leg Curl', sets: '3 × 10–12', rpe: 'RPE 8–9' },
+        { name: 'Bulgarian Split Squat', sets: '3 × 10–12/leg', rpe: 'RPE 9' },
+        { name: 'Seated Calf Raise', sets: '4 × 15–20', rpe: 'RPE 9' },
+        { name: 'Cable Crunch', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+      ]}
+    ]
+  }
+];
+
+// Copy weeks 3-5 from week 2 (Foundation Block continues)
+for (let i = 3; i <= 5; i++) {
+  weekData[i] = JSON.parse(JSON.stringify(weekData[2]));
+}
+
+// WEEK 6 - Ramping Block Begins (Meadows variations introduced)
+weekData[6] = {
+  phase: 'ramping',
+  days: [
+    { name: 'Day 1 - Push', type: 'strength', exercises: [
+      { name: 'Flat Barbell Bench Press', sets: '5 × 3–5', rpe: 'RPE 7–8' },
+      { name: 'Machine Shoulder Press', sets: '4 × 4–6', rpe: 'RPE 7–8' },
+      { name: 'Incline DB Press (deep stretch)', sets: '3 × 6–8', rpe: 'RPE 8' },
+      { name: 'Meadows Lateral Raise', sets: '3 × 12–15', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Skull Crushers (EZ-Bar)', sets: '3 × 8–10', rpe: 'RPE 8' },
+      { name: 'Tricep Pushdown', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 2 - Pull', type: 'strength', exercises: [
+      { name: 'Meadows Row', sets: '5 × 3–5', rpe: 'RPE 7–8', highlight: 'ramping' },
+      { name: 'Lat Pulldown (wide grip)', sets: '4 × 4–6', rpe: 'RPE 7–8' },
+      { name: 'Barbell Shrug', sets: '3 × 6–8', rpe: 'RPE 8' },
+      { name: 'Cable Row (close grip)', sets: '3 × 8–10', rpe: 'RPE 8' },
+      { name: 'EZ-Bar Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+      { name: 'Hammer Curl', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 3 - Legs', type: 'strength', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '5 × 3–5', rpe: 'RPE 7–8', highlight: 'ramping' },
+      { name: 'Romanian Deadlift (full stretch)', sets: '4 × 4–6', rpe: 'RPE 8' },
+      { name: 'Leg Press (feet high / deep)', sets: '3 × 6–8', rpe: 'RPE 8' },
+      { name: 'Seated Leg Curl', sets: '3 × 8–10', rpe: 'RPE 8' },
+      { name: 'Standing Calf Raise (deep)', sets: '4 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 4 - Push', type: 'hyper', exercises: [
+      { name: 'Incline Barbell Press', sets: '3 × 8–10', rpe: 'RPE 8' },
+      { name: 'Super-Stretch DB Fly (off bench)', sets: '4 × 12–15', rpe: 'RPE 8–9', highlight: 'ramping' },
+      { name: 'Machine Shoulder Press', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Meadows Lateral Raise', sets: '4 × 15–20', rpe: 'RPE 8–9', highlight: 'ramping' },
+      { name: 'Cable Cross-Over (low to high)', sets: '3 × 12–15', rpe: 'RPE 9' },
+      { name: 'Overhead Cable Tricep Extension', sets: '3 × 12–15', rpe: 'RPE 9' },
+      { name: 'Tricep Pushdown', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 5 - Pull', type: 'hyper', exercises: [
+      { name: 'Meadows Row', sets: '4 × 8–10', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Lat Pulldown (full stretch)', sets: '4 × 10–12', rpe: 'RPE 8' },
+      { name: 'Seated Cable Row', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Face Pull', sets: '3 × 15–20', rpe: 'RPE 8' },
+      { name: 'Reverse Pec Deck', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+      { name: 'Incline DB Curl', sets: '3 × 10–12', rpe: 'RPE 9' },
+      { name: 'Hammer Curl', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 6 - Legs', type: 'hyper', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '3 × 8–10', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Hack Squat (full depth)', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Leg Extension (paused at stretch)', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+      { name: 'Lying Leg Curl (toes pointed)', sets: '3 × 10–12', rpe: 'RPE 8–9' },
+      { name: 'Bulgarian Split Squat', sets: '3 × 10–12/leg', rpe: 'RPE 9' },
+      { name: 'Seated Calf Raise (deep stretch)', sets: '4 × 15–20', rpe: 'RPE 9' },
+      { name: 'Cable Crunch', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]}
+  ]
+};
+
+// WEEK 7 - Volume ramps begin (hypertrophy +1 set)
+weekData[7] = {
+  phase: 'ramping',
+  days: [
+    { name: 'Day 1 - Push', type: 'strength', exercises: [
+      { name: 'Flat Barbell Bench Press', sets: '5 × 3–5', rpe: 'RPE 8' },
+      { name: 'Machine Shoulder Press', sets: '4 × 4–6', rpe: 'RPE 8' },
+      { name: 'Incline DB Press (deep stretch)', sets: '4 × 6–8', rpe: 'RPE 8' },
+      { name: 'Meadows Lateral Raise', sets: '3 × 12–15', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Skull Crushers (EZ-Bar)', sets: '3 × 8–10', rpe: 'RPE 8–9' },
+      { name: 'Tricep Pushdown', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 2 - Pull', type: 'strength', exercises: [
+      { name: 'Meadows Row', sets: '5 × 3–5', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Lat Pulldown (wide grip)', sets: '4 × 4–6', rpe: 'RPE 8' },
+      { name: 'Barbell Shrug', sets: '3 × 6–8', rpe: 'RPE 8' },
+      { name: 'Cable Row (close grip)', sets: '4 × 8–10', rpe: 'RPE 8' },
+      { name: 'EZ-Bar Curl', sets: '3 × 8–10', rpe: 'RPE 8–9' },
+      { name: 'Hammer Curl', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 3 - Legs', type: 'strength', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '5 × 3–5', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Romanian Deadlift (full stretch)', sets: '4 × 4–6', rpe: 'RPE 8' },
+      { name: 'Leg Press (deep)', sets: '3 × 6–8', rpe: 'RPE 8' },
+      { name: 'Seated Leg Curl', sets: '4 × 8–10', rpe: 'RPE 8' },
+      { name: 'Standing Calf Raise (deep)', sets: '4 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 4 - Push', type: 'hyper', exercises: [
+      { name: 'Incline Barbell Press', sets: '4 × 8–10', rpe: 'RPE 8' },
+      { name: 'Super-Stretch DB Fly', sets: '4 × 12–15', rpe: 'RPE 8–9', highlight: 'ramping' },
+      { name: 'Machine Shoulder Press', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Meadows Lateral Raise', sets: '4 × 15–20', rpe: 'RPE 8–9', highlight: 'ramping' },
+      { name: 'Cable Cross-Over (low to high)', sets: '3 × 12–15', rpe: 'RPE 9' },
+      { name: 'Overhead Cable Tricep Extension', sets: '4 × 12–15', rpe: 'RPE 9' },
+      { name: 'Tricep Pushdown', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 5 - Pull', type: 'hyper', exercises: [
+      { name: 'Meadows Row', sets: '4 × 8–10', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Lat Pulldown (full stretch)', sets: '4 × 10–12', rpe: 'RPE 8' },
+      { name: 'Seated Cable Row (elbows high)', sets: '4 × 10–12', rpe: 'RPE 8–9' },
+      { name: 'Face Pull', sets: '3 × 15–20', rpe: 'RPE 8' },
+      { name: 'Reverse Pec Deck (arms wide)', sets: '3 × 12–15', rpe: 'RPE 8–9' },
+      { name: 'Incline DB Curl', sets: '3 × 10–12', rpe: 'RPE 9' },
+      { name: 'Hammer Curl', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 6 - Legs', type: 'hyper', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '4 × 8–10', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Hack Squat (full depth)', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Leg Extension (paused)', sets: '4 × 12–15', rpe: 'RPE 8–9' },
+      { name: 'Lying Leg Curl (toes pointed)', sets: '4 × 10–12', rpe: 'RPE 8–9' },
+      { name: 'Bulgarian Split Squat', sets: '3 × 10–12/leg', rpe: 'RPE 9' },
+      { name: 'Seated Calf Raise (deep)', sets: '4 × 15–20', rpe: 'RPE 9' },
+      { name: 'Cable Crunch', sets: '3 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]}
+  ]
+};
+
+// Copy week 7 to weeks 8-11 (volume continues ramping)
+for (let i = 8; i <= 11; i++) {
+  weekData[i] = JSON.parse(JSON.stringify(weekData[7]));
+}
+
+// WEEK 12 - Deload/Peak Week
+weekData[12] = {
+  phase: 'ramping',
+  label: 'PEAK / DELOAD',
+  days: [
+    { name: 'Day 1 - Push', type: 'strength', exercises: [
+      { name: 'Flat Barbell Bench Press', sets: '3 × 3–5 ↓vol', rpe: 'RPE 7' },
+      { name: 'Machine Shoulder Press', sets: '3 × 4–6', rpe: 'RPE 7' },
+      { name: 'Incline DB Press (deep stretch)', sets: '2 × 6–8', rpe: 'RPE 7–8' },
+      { name: 'Meadows Lateral Raise', sets: '2 × 12–15', rpe: 'RPE 7–8', highlight: 'ramping' },
+      { name: 'Skull Crushers (EZ-Bar)', sets: '2 × 8–10', rpe: 'RPE 8' },
+      { name: 'Tricep Pushdown', sets: '2 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 2 - Pull', type: 'strength', exercises: [
+      { name: 'Meadows Row', sets: '3 × 3–5 ↓vol', rpe: 'RPE 7', highlight: 'ramping' },
+      { name: 'Lat Pulldown (wide grip)', sets: '3 × 4–6', rpe: 'RPE 7' },
+      { name: 'Barbell Shrug', sets: '2 × 6–8', rpe: 'RPE 7–8' },
+      { name: 'Cable Row (close grip)', sets: '2 × 8–10', rpe: 'RPE 7–8' },
+      { name: 'EZ-Bar Curl', sets: '2 × 8–10', rpe: 'RPE 8' },
+      { name: 'Hammer Curl', sets: '2 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 3 - Legs', type: 'strength', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '3 × 3–5 ↓vol', rpe: 'RPE 7', highlight: 'ramping' },
+      { name: 'Romanian Deadlift', sets: '3 × 4–6', rpe: 'RPE 7' },
+      { name: 'Leg Press', sets: '2 × 6–8', rpe: 'RPE 7–8' },
+      { name: 'Seated Leg Curl', sets: '2 × 8–10', rpe: 'RPE 7–8' },
+      { name: 'Standing Calf Raise', sets: '3 × 10–12', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 4 - Push', type: 'hyper', exercises: [
+      { name: 'Incline Barbell Press', sets: '3 × 8–10', rpe: 'RPE 7–8' },
+      { name: 'Super-Stretch DB Fly', sets: '3 × 12–15', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Machine Shoulder Press', sets: '2 × 10–12', rpe: 'RPE 7–8' },
+      { name: 'Meadows Lateral Raise', sets: '3 × 15–20', rpe: 'RPE 8', highlight: 'ramping' },
+      { name: 'Cable Cross-Over', sets: '2 × 12–15', rpe: 'RPE 8' },
+      { name: 'Overhead Cable Tricep Extension', sets: '2 × 12–15', rpe: 'RPE 8' },
+      { name: 'Tricep Pushdown', sets: '2 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 5 - Pull', type: 'hyper', exercises: [
+      { name: 'Meadows Row', sets: '3 × 8–10', rpe: 'RPE 7–8', highlight: 'ramping' },
+      { name: 'Lat Pulldown (full stretch)', sets: '3 × 10–12', rpe: 'RPE 7–8' },
+      { name: 'Seated Cable Row', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Face Pull', sets: '2 × 15–20', rpe: 'RPE 8' },
+      { name: 'Reverse Pec Deck', sets: '2 × 12–15', rpe: 'RPE 8' },
+      { name: 'Incline DB Curl', sets: '2 × 10–12', rpe: 'RPE 8–9' },
+      { name: 'Hammer Curl', sets: '2 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]},
+    { name: 'Day 6 - Legs', type: 'hyper', exercises: [
+      { name: 'Deep Smith Machine Squat', sets: '3 × 8–10', rpe: 'RPE 7–8', highlight: 'ramping' },
+      { name: 'Hack Squat', sets: '2 × 10–12', rpe: 'RPE 7–8' },
+      { name: 'Leg Extension (paused)', sets: '3 × 12–15', rpe: 'RPE 8' },
+      { name: 'Lying Leg Curl', sets: '3 × 10–12', rpe: 'RPE 8' },
+      { name: 'Bulgarian Split Squat', sets: '2 × 10–12/leg', rpe: 'RPE 8' },
+      { name: 'Seated Calf Raise (deep)', sets: '3 × 15–20', rpe: 'RPE 8–9' },
+      { name: 'Cable Crunch', sets: '2 × 12–15', rpe: 'RPE 10 ✕', rpe10: true }
+    ]}
+  ]
+};
+
+// Generate week buttons
+const weekButtonsEl = document.getElementById('weekButtons');
+for (let i = 1; i <= 12; i++) {
+  const btn = document.createElement('button');
+  btn.className = `week-btn ${weekData[i].phase}`;
+  btn.textContent = `WK ${i}`;
+  btn.dataset.week = i;
+  btn.onclick = () => showWeek(i);
+  weekButtonsEl.appendChild(btn);
+}
+
+// Generate week content
+const weekContainer = document.getElementById('weekContainer');
+for (let weekNum = 1; weekNum <= 12; weekNum++) {
+  const week = weekData[weekNum];
+  
+  const weekDiv = document.createElement('div');
+  weekDiv.className = 'week-content';
+  weekDiv.id = `week-${weekNum}`;
+  
+  const phaseTag = document.createElement('div');
+  phaseTag.className = `phase-tag ${week.phase}`;
+  phaseTag.textContent = week.label ? 
+    `${week.phase.toUpperCase()} BLOCK · ${week.label}` : 
+    `${week.phase.toUpperCase()} BLOCK · WEEK ${weekNum}`;
+  weekDiv.appendChild(phaseTag);
+  
+  week.days.forEach((day, dayIdx) => {
+    const dayCard = document.createElement('div');
+    dayCard.className = 'day-card';
+    
+    const dayHeader = document.createElement('div');
+    dayHeader.className = 'day-header';
+    dayHeader.onclick = () => toggleDay(dayCard);
+    
+    const dayTitleWrap = document.createElement('div');
+    dayTitleWrap.className = 'day-title-wrap';
+    
+    const dayBadge = document.createElement('div');
+    dayBadge.className = `day-badge ${day.type}`;
+    dayBadge.textContent = day.type === 'strength' ? 'STRENGTH' : 'HYPERTROPHY';
+    
+    const dayTitle = document.createElement('div');
+    dayTitle.className = 'day-title';
+    dayTitle.textContent = day.name;
+    
+    dayTitleWrap.appendChild(dayBadge);
+    dayTitleWrap.appendChild(dayTitle);
+    
+    const expandIcon = document.createElement('div');
+    expandIcon.className = 'expand-icon';
+    expandIcon.textContent = '▼';
+    
+    dayHeader.appendChild(dayTitleWrap);
+    dayHeader.appendChild(expandIcon);
+    
+    const dayContent = document.createElement('div');
+    dayContent.className = 'day-content';
+    
+    day.exercises.forEach((ex, exIdx) => {
+      const exDiv = document.createElement('div');
+      exDiv.className = 'exercise';
+      
+      const exName = document.createElement('div');
+      exName.className = 'ex-name';
+      if (ex.highlight === 'foundation') exName.classList.add('highlight');
+      if (ex.highlight === 'ramping') exName.classList.add('ramp-highlight');
+      exName.textContent = ex.name;
+      
+      const exMeta = document.createElement('div');
+      exMeta.className = 'ex-meta';
+      
+      const exSets = document.createElement('span');
+      exSets.className = 'ex-sets';
+      exSets.textContent = ex.sets;
+      
+      const exRpe = document.createElement('span');
+      exRpe.className = ex.rpe10 ? 'ex-rpe rpe-10' : 'ex-rpe';
+      exRpe.textContent = ex.rpe;
+      
+      exMeta.appendChild(exSets);
+      exMeta.appendChild(exRpe);
+      
+      exDiv.appendChild(exName);
+      exDiv.appendChild(exMeta);
+      
+      // Add weight tracking inputs
+      const numSets = parseInt(ex.sets.split('×')[0].trim());
+      const weightInputs = document.createElement('div');
+      weightInputs.className = 'weight-inputs';
+      
+      for (let setNum = 1; setNum <= numSets; setNum++) {
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'weight-input-wrap';
+        
+        const label = document.createElement('div');
+        label.className = 'weight-label';
+        label.textContent = `Set ${setNum}`;
+        
+        const input = document.createElement('input');
+        input.className = 'weight-input';
+        input.type = 'text';
+        input.inputMode = 'decimal';
+        input.placeholder = '—';
+        input.dataset.week = weekNum;
+        input.dataset.day = dayIdx;
+        input.dataset.exercise = exIdx;
+        input.dataset.set = setNum;
+        
+        const savedValue = getWorkoutData(weekNum, dayIdx, exIdx, setNum);
+        if (savedValue) input.value = savedValue;
+        
+        input.addEventListener('input', (e) => {
+          saveWorkoutData(weekNum, dayIdx, exIdx, setNum, e.target.value);
+        });
+        
+        inputWrap.appendChild(label);
+        inputWrap.appendChild(input);
+        weightInputs.appendChild(inputWrap);
+      }
+      
+      exDiv.appendChild(weightInputs);
+      dayContent.appendChild(exDiv);
+    });
+    
+    dayCard.appendChild(dayHeader);
+    dayCard.appendChild(dayContent);
+    weekDiv.appendChild(dayCard);
+  });
+  
+  weekContainer.appendChild(weekDiv);
+}
+
+function showWeek(weekNum) {
+  document.querySelectorAll('.week-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.week-btn').forEach(el => el.classList.remove('active'));
+  
+  document.getElementById(`week-${weekNum}`).classList.add('active');
+  document.querySelector(`.week-btn[data-week="${weekNum}"]`).classList.add('active');
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleDay(dayCard) {
+  dayCard.classList.toggle('expanded');
+}
+
+function saveWorkoutData(week, day, exercise, set, value) {
+  const key = `w${week}_d${day}_e${exercise}_s${set}`;
+  if (value.trim() === '') {
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, value);
+  }
+}
+
+function getWorkoutData(week, day, exercise, set) {
+  const key = `w${week}_d${day}_e${exercise}_s${set}`;
+  return localStorage.getItem(key) || '';
+}
+
+showWeek(1);
+</script>
+
+</body>
+</html>
