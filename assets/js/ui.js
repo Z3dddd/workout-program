@@ -1,14 +1,21 @@
 import {
+  getCardioCurrentStreak,
+  getCardioDay,
+  getCardioTotals,
   getExerciseNote,
   getExerciseRpe,
+  isCardioDayLogged,
   getWorkoutData,
+  saveCardioDay,
   saveExerciseNote,
   saveExerciseRpe,
   saveWorkoutData
 } from "./storage.js";
 
 let activeWeekNum = 1;
+let activeDayNum = 1;
 let weekPhaseMap = {};
+let cardioBound = false;
 
 function getSetCount(setText) {
   const match = setText.match(/^\s*(\d+)/);
@@ -16,6 +23,133 @@ function getSetCount(setText) {
     return 1;
   }
   return Number.parseInt(match[1], 10);
+}
+
+function parseInputNumber(value, allowDecimal = false) {
+  const normalized = String(value).replace(",", ".").trim();
+  if (!normalized) return 0;
+  const parsed = allowDecimal ? Number.parseFloat(normalized) : Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function formatWhole(value) {
+  return Number.isFinite(value) && value > 0 ? String(Math.round(value)) : "";
+}
+
+function formatDistance(value) {
+  return Number.isFinite(value) && value > 0 ? value.toFixed(1) : "";
+}
+
+function getCardioInputs() {
+  return {
+    contextLabel: document.getElementById("cardioContextLabel"),
+    streakLabel: document.getElementById("cardioStreak"),
+    stairMinutes: document.getElementById("cardioStairMinutes"),
+    treadmillMinutes: document.getElementById("cardioTreadmillMinutes"),
+    stairsClimbed: document.getElementById("cardioStairsClimbed"),
+    treadmillDistance: document.getElementById("cardioTreadmillDistance"),
+    totalMinutesAll: document.getElementById("cardioTotalMinutesAll"),
+    stairMinutesAll: document.getElementById("cardioStairMinutesAll"),
+    stairsAll: document.getElementById("cardioStairsAll"),
+    distanceAll: document.getElementById("cardioDistanceAll"),
+    copyPrevBtn: document.getElementById("cardioCopyPrevBtn"),
+    copyStatus: document.getElementById("cardioCopyStatus")
+  };
+}
+
+function computePreviousDay(week, day) {
+  if (day > 1) return { week, day: day - 1 };
+  if (week > 1) return { week: week - 1, day: 6 };
+  return null;
+}
+
+function updateCardioTotalsView() {
+  const els = getCardioInputs();
+  if (!els.totalMinutesAll || !els.stairMinutesAll || !els.stairsAll || !els.distanceAll || !els.streakLabel) return;
+
+  const totals = getCardioTotals();
+  els.totalMinutesAll.textContent = `${Math.round(totals.totalMinutes)}`;
+  els.stairMinutesAll.textContent = `${Math.round(totals.stairMinutes)}`;
+  els.stairsAll.textContent = `${Math.round(totals.stairsClimbed)}`;
+  els.distanceAll.textContent = `${totals.treadmillDistance.toFixed(1)} mi`;
+  els.streakLabel.textContent = `Streak: ${getCardioCurrentStreak()} days`;
+}
+
+function updateCardioDayView() {
+  const els = getCardioInputs();
+  if (!els.stairMinutes || !els.treadmillMinutes || !els.stairsClimbed || !els.treadmillDistance) return;
+
+  const dayData = getCardioDay(activeWeekNum, activeDayNum);
+  els.stairMinutes.value = formatWhole(dayData.stairMinutes);
+  els.treadmillMinutes.value = formatWhole(dayData.treadmillMinutes);
+  els.stairsClimbed.value = formatWhole(dayData.stairsClimbed);
+  els.treadmillDistance.value = formatDistance(dayData.treadmillDistance);
+  if (els.contextLabel) {
+    els.contextLabel.textContent = `W${activeWeekNum} D${activeDayNum} · ${Math.round(dayData.totalMinutes)}m`;
+  }
+  if (els.copyStatus) {
+    els.copyStatus.textContent = "";
+  }
+}
+
+function persistCardioFromInputs() {
+  const els = getCardioInputs();
+  if (!els.stairMinutes || !els.treadmillMinutes || !els.stairsClimbed || !els.treadmillDistance) return;
+
+  const stairMinutes = parseInputNumber(els.stairMinutes.value);
+  const treadmillMinutes = parseInputNumber(els.treadmillMinutes.value);
+  const stairsClimbed = parseInputNumber(els.stairsClimbed.value);
+  const treadmillDistance = parseInputNumber(els.treadmillDistance.value, true);
+  const totalMinutes = stairMinutes + treadmillMinutes;
+  if (els.contextLabel) {
+    els.contextLabel.textContent = `W${activeWeekNum} D${activeDayNum} · ${Math.round(totalMinutes)}m`;
+  }
+
+  saveCardioDay(activeWeekNum, activeDayNum, {
+    stairMinutes,
+    treadmillMinutes,
+    totalMinutes,
+    stairsClimbed,
+    treadmillDistance
+  });
+  updateCardioTotalsView();
+}
+
+function initCardioTracker() {
+  if (cardioBound) return;
+  const els = getCardioInputs();
+  if (!els.stairMinutes || !els.treadmillMinutes || !els.stairsClimbed || !els.treadmillDistance || !els.copyPrevBtn) return;
+
+  const onInput = () => persistCardioFromInputs();
+  els.stairMinutes.addEventListener("input", onInput);
+  els.treadmillMinutes.addEventListener("input", onInput);
+  els.stairsClimbed.addEventListener("input", onInput);
+  els.treadmillDistance.addEventListener("input", onInput);
+
+  els.copyPrevBtn.addEventListener("click", () => {
+    const prev = computePreviousDay(activeWeekNum, activeDayNum);
+    if (!prev) {
+      if (els.copyStatus) els.copyStatus.textContent = "No previous day available.";
+      return;
+    }
+
+    const prevData = getCardioDay(prev.week, prev.day);
+    if (!isCardioDayLogged(prevData)) {
+      if (els.copyStatus) els.copyStatus.textContent = `No cardio logged for WK ${prev.week} DAY ${prev.day}.`;
+      return;
+    }
+
+    els.stairMinutes.value = formatWhole(prevData.stairMinutes);
+    els.treadmillMinutes.value = formatWhole(prevData.treadmillMinutes);
+    els.stairsClimbed.value = formatWhole(prevData.stairsClimbed);
+    els.treadmillDistance.value = formatDistance(prevData.treadmillDistance);
+    persistCardioFromInputs();
+    if (els.copyStatus) els.copyStatus.textContent = `Copied WK ${prev.week} DAY ${prev.day}.`;
+  });
+
+  cardioBound = true;
+  updateCardioDayView();
+  updateCardioTotalsView();
 }
 
 function createDayCard(day, weekNum, dayIdx) {
@@ -33,6 +167,10 @@ function createDayCard(day, weekNum, dayIdx) {
     const isExpanded = dayCard.classList.contains("expanded");
     dayHeader.setAttribute("aria-expanded", String(isExpanded));
     updateDayTabActiveState(isExpanded ? dayIdx + 1 : 0);
+    if (isExpanded) {
+      activeDayNum = dayIdx + 1;
+      updateCardioDayView();
+    }
   });
 
   const dayTitleWrap = document.createElement("div");
@@ -172,6 +310,7 @@ function updateDayTabActiveState(dayNum) {
 function showDay(dayNum) {
   const activeWeekEl = document.getElementById(`week-${activeWeekNum}`);
   if (!activeWeekEl) return;
+  activeDayNum = dayNum;
 
   const dayCards = activeWeekEl.querySelectorAll(".day-card");
   dayCards.forEach((card) => {
@@ -187,6 +326,7 @@ function showDay(dayNum) {
   if (targetCard) {
     targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+  updateCardioDayView();
 }
 
 function renderDayTabs(weekData) {
@@ -225,6 +365,7 @@ function renderDayTabs(weekData) {
 
 function showWeek(weekNum) {
   activeWeekNum = weekNum;
+  activeDayNum = Math.min(Math.max(activeDayNum, 1), 6);
   document.querySelectorAll(".week-content").forEach((el) => el.classList.remove("active"));
   document.querySelectorAll(".week-btn").forEach((el) => el.classList.remove("active"));
   document.getElementById(`week-${weekNum}`)?.classList.add("active");
@@ -246,6 +387,8 @@ function showWeek(weekNum) {
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+  updateCardioDayView();
+  updateCardioTotalsView();
 }
 
 function renderProgram(weekData) {
@@ -288,6 +431,8 @@ function renderProgram(weekData) {
 
     weekContainer.appendChild(weekDiv);
   }
+
+  initCardioTracker();
 }
 
 export { renderProgram, showWeek };

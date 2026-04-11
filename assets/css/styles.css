@@ -139,6 +139,11 @@ body {
   border: none;
   padding: 0;
   background: transparent;
+  position: fixed;
+  margin: auto;
+  inset: 0;
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
 }
 
 .pin-dialog::backdrop {
@@ -226,6 +231,156 @@ body {
   margin-top: 10px;
   letter-spacing: 0.5px;
   line-height: 1.4;
+}
+
+.hero-cardio {
+  display: grid;
+  margin: 0 0 12px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.cardio-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0f1118;
+  padding: 7px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-height: 22px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardio-head h3 {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.4px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.cardio-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 16px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.cardio-copy-btn {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cardio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.cardio-grid label {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  padding: 5px;
+  min-height: 64px;
+  align-content: start;
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.cardio-grid input {
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  margin-top: 6px;
+}
+
+.cardio-grid input:focus {
+  outline: none;
+}
+
+.cardio-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardio-copy-status {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.cardio-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 30px;
+  margin-top: 2px;
+}
+
+.cardio-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.cardio-totals div {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px;
+  background: var(--surface);
+  min-height: 64px;
+  display: grid;
+  align-content: start;
+}
+
+.cardio-totals span {
+  display: block;
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.8px;
+}
+
+.cardio-totals strong {
+  display: block;
+  margin-top: 2px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text);
 }
 
 .program-legend {
@@ -717,6 +872,11 @@ body {
 }
 
 @media (min-width: 700px) {
+  .hero-cardio {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
   .legend-item {
     font-size: 14px;
   }
@@ -741,6 +901,21 @@ body {
 @media (max-width: 380px) {
   .app-shell {
     padding: calc(12px + env(safe-area-inset-top)) 10px calc(50px + env(safe-area-inset-bottom));
+  }
+
+  .cardio-grid,
+  .cardio-totals {
+    grid-template-columns: 1fr;
+  }
+
+  .cardio-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardio-grid label,
+  .cardio-totals div {
+    min-height: auto;
   }
 
   .exercise-log-wrap {

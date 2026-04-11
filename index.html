@@ -25,6 +25,49 @@
       <button type="button" class="sync-btn" id="openSyncPinBtn">SET SYNC PIN</button>
     </div>
 
+    <section class="hero-cardio" id="cardioPanel" aria-label="Cardio tracker">
+      <article class="cardio-card cardio-entry">
+        <div class="cardio-head">
+          <h3>CARDIO ENTRY</h3>
+          <span id="cardioContextLabel">W1 D1 · 0m</span>
+        </div>
+        <div class="cardio-grid">
+          <label>
+            <span>Stair Minutes</span>
+            <input id="cardioStairMinutes" type="text" inputmode="numeric" placeholder="0">
+          </label>
+          <label>
+            <span>Treadmill Minutes</span>
+            <input id="cardioTreadmillMinutes" type="text" inputmode="numeric" placeholder="0">
+          </label>
+          <label>
+            <span>Stairs Climbed</span>
+            <input id="cardioStairsClimbed" type="text" inputmode="numeric" placeholder="0">
+          </label>
+          <label>
+            <span>Treadmill Distance (mi)</span>
+            <input id="cardioTreadmillDistance" type="text" inputmode="decimal" placeholder="0.0">
+          </label>
+        </div>
+      </article>
+      <article class="cardio-card cardio-summary">
+        <div class="cardio-head">
+          <h3>12-WEEK TOTALS</h3>
+          <span id="cardioStreak">Streak: 0 days</span>
+        </div>
+        <div class="cardio-totals">
+          <div><span>Total Minutes</span><strong id="cardioTotalMinutesAll">0</strong></div>
+          <div><span>Stair Minutes</span><strong id="cardioStairMinutesAll">0</strong></div>
+          <div><span>Stairs Climbed</span><strong id="cardioStairsAll">0</strong></div>
+          <div><span>Treadmill Distance</span><strong id="cardioDistanceAll">0.0 mi</strong></div>
+        </div>
+      </article>
+      <div class="cardio-toolbar">
+        <button type="button" class="sync-btn ghost cardio-copy-btn" id="cardioCopyPrevBtn">COPY YESTERDAY</button>
+        <span id="cardioCopyStatus" class="cardio-copy-status" aria-live="polite"></span>
+      </div>
+    </section>
+
     <div class="program-legend" aria-label="Program legend">
       <div class="legend-item">
         <span class="legend-dot foundation" aria-hidden="true"></span>

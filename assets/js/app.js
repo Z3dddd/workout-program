@@ -1,10 +1,12 @@
 import { weekData } from "./data/weekData.js";
 import { renderProgram, showWeek } from "./ui.js";
-import { applyRemoteEntries } from "./storage.js";
+import { applyRemoteCardioEntries, applyRemoteEntries } from "./storage.js";
 import {
   clearSavedPin,
+  enqueueCardioChange,
   enqueueEntryChange,
   flushPending,
+  getPendingCardioEntries,
   getPendingEntries,
   getSavedPin,
   initAutoRetry,
@@ -54,9 +56,11 @@ function wirePinDialog() {
     savePin(pin, remember.checked);
     activePin = pin;
     try {
-      const remoteEntries = await pullRemote(activePin);
-      applyRemoteEntries(remoteEntries);
+      const remoteData = await pullRemote(activePin);
+      applyRemoteEntries(remoteData.entries);
+      applyRemoteCardioEntries(remoteData.cardioEntries);
       applyRemoteEntries(getPendingEntries());
+      applyRemoteCardioEntries(getPendingCardioEntries());
       await flushPending(activePin);
       setSyncStatus("synced", "Sync enabled");
       dialog.close();
@@ -82,6 +86,22 @@ function wireLiveSync() {
     });
     scheduleFlush(activePin);
   });
+
+  window.addEventListener("cardio:data-changed", (event) => {
+    if (!activePin || !isSyncEnabled()) return;
+    enqueueCardioChange({
+      week: event.detail.week,
+      day: event.detail.day,
+      stairMinutes: event.detail.stairMinutes,
+      treadmillMinutes: event.detail.treadmillMinutes,
+      totalMinutes: event.detail.totalMinutes,
+      stairsClimbed: event.detail.stairsClimbed,
+      treadmillDistance: event.detail.treadmillDistance,
+      clear: event.detail.clear === true,
+      updatedAt: event.detail.updatedAt
+    });
+    scheduleFlush(activePin);
+  });
 }
 
 async function init() {
@@ -96,9 +116,11 @@ async function init() {
     activePin = getSavedPin();
     if (activePin) {
       try {
-        const remoteEntries = await pullRemote(activePin);
-        applyRemoteEntries(remoteEntries);
+        const remoteData = await pullRemote(activePin);
+        applyRemoteEntries(remoteData.entries);
+        applyRemoteCardioEntries(remoteData.cardioEntries);
         applyRemoteEntries(getPendingEntries());
+        applyRemoteCardioEntries(getPendingCardioEntries());
         await flushPending(activePin);
       } catch (error) {
         setSyncStatus("error", error.message);

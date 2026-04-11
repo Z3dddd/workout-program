@@ -145,6 +145,11 @@ body {
   border: none;
   padding: 0;
   background: transparent;
+  position: fixed;
+  margin: auto;
+  inset: 0;
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
 }
 
 .pin-dialog::backdrop {
@@ -737,6 +742,11 @@ body {
   border: none;
   padding: 0;
   background: transparent;
+  position: fixed;
+  margin: auto;
+  inset: 0;
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
 }
 
 .exercise-detail-dialog::backdrop {
@@ -804,6 +814,11 @@ body {
   border: none;
   padding: 0;
   background: transparent;
+  position: fixed;
+  margin: auto;
+  inset: 0;
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
 }
 
 .chart-dialog::backdrop {

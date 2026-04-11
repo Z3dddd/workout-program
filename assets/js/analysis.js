@@ -1,8 +1,9 @@
 import { weekData } from "./data/weekData.js";
-import { applyRemoteEntries, getExerciseNote, getExerciseRpe } from "./storage.js";
+import { applyRemoteCardioEntries, applyRemoteEntries, getExerciseNote, getExerciseRpe } from "./storage.js";
 import {
   clearSavedPin,
   flushPending,
+  getPendingCardioEntries,
   getPendingEntries,
   getSavedPin,
   initAutoRetry,
@@ -1259,9 +1260,11 @@ function wirePinDialog(onSynced) {
     if (!pin) return;
     savePin(pin, remember.checked);
     try {
-      const remoteEntries = await pullRemote(pin);
-      applyRemoteEntries(remoteEntries);
+      const remoteData = await pullRemote(pin);
+      applyRemoteEntries(remoteData.entries);
+      applyRemoteCardioEntries(remoteData.cardioEntries);
       applyRemoteEntries(getPendingEntries());
+      applyRemoteCardioEntries(getPendingCardioEntries());
       await flushPending(pin);
       setSyncStatus("synced", "Sync enabled");
       dialog.close();
@@ -1356,9 +1359,11 @@ async function init() {
   }
 
   try {
-    const remoteEntries = await pullRemote(pin);
-    applyRemoteEntries(remoteEntries);
+    const remoteData = await pullRemote(pin);
+    applyRemoteEntries(remoteData.entries);
+    applyRemoteCardioEntries(remoteData.cardioEntries);
     applyRemoteEntries(getPendingEntries());
+    applyRemoteCardioEntries(getPendingCardioEntries());
     await flushPending(pin);
   } catch (error) {
     setSyncStatus("error", error.message);

@@ -4,6 +4,7 @@ const SYNC_PIN_SESSION_KEY = "sync_pin_session";
 const SYNC_PIN_DEVICE_KEY = "sync_pin_device";
 const SYNC_LAST_PULL_KEY = "sync_last_pull_at";
 const SYNC_OUTBOX_KEY = "sync_outbox_v1";
+const SYNC_CARDIO_OUTBOX_KEY = "sync_cardio_outbox_v1";
 
 let flushTimer = null;
 let statusHandler = null;
@@ -48,8 +49,23 @@ function writeOutbox(entries) {
   localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(entries));
 }
 
+function readCardioOutbox() {
+  try {
+    const raw = localStorage.getItem(SYNC_CARDIO_OUTBOX_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCardioOutbox(entries) {
+  localStorage.setItem(SYNC_CARDIO_OUTBOX_KEY, JSON.stringify(entries));
+}
+
 function updateOutboxStatusMessage(prefix = "Pending") {
-  const count = readOutbox().length;
+  const count = readOutbox().length + readCardioOutbox().length;
   if (count > 0) {
     setSyncStatus("pending", `${prefix} ${count} change${count === 1 ? "" : "s"}`);
   }
@@ -59,8 +75,16 @@ function getOutboxSize() {
   return readOutbox().length;
 }
 
+function getCardioOutboxSize() {
+  return readCardioOutbox().length;
+}
+
 function getPendingEntries() {
   return readOutbox();
+}
+
+function getPendingCardioEntries() {
+  return readCardioOutbox();
 }
 
 function savePin(pin, rememberOnDevice) {
@@ -102,16 +126,19 @@ async function callSyncFunction(payload, pin) {
 }
 
 async function pullRemote(pin) {
-  if (!isSyncEnabled()) return [];
+  if (!isSyncEnabled()) return { entries: [], cardioEntries: [] };
   setSyncStatus("syncing", "Pulling latest data...");
   const result = await callSyncFunction({ action: "pull" }, pin);
   localStorage.setItem(SYNC_LAST_PULL_KEY, new Date().toISOString());
-  if (getOutboxSize() > 0) {
+  if (getOutboxSize() > 0 || getCardioOutboxSize() > 0) {
     updateOutboxStatusMessage("Pending");
   } else {
     setSyncStatus("synced", "Latest data pulled");
   }
-  return Array.isArray(result.entries) ? result.entries : [];
+  return {
+    entries: Array.isArray(result.entries) ? result.entries : [],
+    cardioEntries: Array.isArray(result.cardioEntries) ? result.cardioEntries : []
+  };
 }
 
 function enqueueEntryChange(entry) {
@@ -139,6 +166,26 @@ function enqueueEntryChange(entry) {
   updateOutboxStatusMessage("Pending");
 }
 
+function enqueueCardioChange(entry) {
+  if (!isSyncEnabled()) return;
+  const normalized = {
+    ...entry,
+    updatedAt: entry.updatedAt ?? new Date().toISOString()
+  };
+
+  const outbox = readCardioOutbox();
+  const existingIndex = outbox.findIndex((item) =>
+    item.week === entry.week && item.day === entry.day
+  );
+  if (existingIndex >= 0) {
+    outbox[existingIndex] = normalized;
+  } else {
+    outbox.push(normalized);
+  }
+  writeCardioOutbox(outbox);
+  updateOutboxStatusMessage("Pending");
+}
+
 async function flushPending(pin) {
   if (!isSyncEnabled()) return;
   if (!pin) {
@@ -148,24 +195,33 @@ async function flushPending(pin) {
   if (isFlushing) return;
 
   const outbox = readOutbox();
-  if (!outbox.length) {
+  const cardioOutbox = readCardioOutbox();
+  if (!outbox.length && !cardioOutbox.length) {
     setSyncStatus("synced", "All changes synced");
     return;
   }
 
   isFlushing = true;
   const batch = [...outbox];
+  const cardioBatch = [...cardioOutbox];
   const batchVersion = new Map(batch.map((entry) => [getEntryId(entry), entry.updatedAt]));
+  const cardioVersion = new Map(cardioBatch.map((entry) => [`w${entry.week}_d${entry.day}`, entry.updatedAt]));
   setSyncStatus("syncing", "Syncing changes...");
   try {
-    await callSyncFunction({ action: "push", entries: batch }, pin);
+    await callSyncFunction({ action: "push", entries: batch, cardioEntries: cardioBatch }, pin);
     const currentOutbox = readOutbox();
+    const currentCardioOutbox = readCardioOutbox();
     const remaining = currentOutbox.filter((entry) => {
       const id = getEntryId(entry);
       return batchVersion.get(id) !== entry.updatedAt;
     });
+    const remainingCardio = currentCardioOutbox.filter((entry) => {
+      const id = `w${entry.week}_d${entry.day}`;
+      return cardioVersion.get(id) !== entry.updatedAt;
+    });
     writeOutbox(remaining);
-    if (remaining.length > 0) {
+    writeCardioOutbox(remainingCardio);
+    if (remaining.length > 0 || remainingCardio.length > 0) {
       updateOutboxStatusMessage("Pending");
     } else {
       setSyncStatus("synced", "All changes synced");
@@ -211,9 +267,11 @@ function getLastPullAt() {
 
 export {
   clearSavedPin,
+  enqueueCardioChange,
   enqueueEntryChange,
   flushPending,
   getLastPullAt,
+  getPendingCardioEntries,
   getOutboxSize,
   getPendingEntries,
   getSavedPin,
