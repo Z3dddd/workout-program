@@ -826,11 +826,11 @@ body {
 }
 
 .chart-dialog-card {
-  width: min(920px, calc(100vw - 16px));
+  width: min(760px, calc(100vw - 28px));
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--card);
-  padding: 12px;
+  padding: 10px;
 }
 
 .chart-dialog-head {
@@ -855,8 +855,8 @@ body {
 
 .chart-wrap {
   position: relative;
-  height: 52vh;
-  min-height: 280px;
+  height: 42vh;
+  min-height: 220px;
 }
 
 .chart-empty {
@@ -923,11 +923,12 @@ body {
   }
 
   .chart-dialog-card {
-    padding: 10px;
+    width: min(700px, calc(100vw - 24px));
+    padding: 9px;
   }
 
   .chart-wrap {
-    height: 46vh;
-    min-height: 240px;
+    height: 36vh;
+    min-height: 190px;
   }
 }
